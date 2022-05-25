@@ -1,18 +1,16 @@
-pub fn mod_pow(base: u128, exponent: u128, modulus: u128) -> u128 {
-    // println!("{}", (modulus - 1));
-    // println!("{}", (u128::MAX / (modulus - 1)));
-    // assert!((modulus - 1) < (u128::MAX / (modulus - 1)));
+use num_bigint::{BigUint, ToBigUint};
 
-    let mut result = 1;
+pub fn mod_pow(base: &BigUint, exponent: &BigUint, modulus: &BigUint) -> BigUint {
+    let mut result = 1u8.to_biguint().unwrap();
     let mut base = base & modulus;
-    let mut exponent = exponent;
+    let mut exp = exponent.clone();
 
-    while exponent > 0 {
-        let s_bit = exponent % 2 == 1;
-        result = ((result * base) % modulus) * u128::from(s_bit) + result * (1 - u128::from(s_bit));
+    while exp > 0u8.to_biguint().unwrap() {
+        let s_bit = &exp % &2u8.to_biguint().unwrap() == 1u8.to_biguint().unwrap();
+        result = ((&result * &base) % modulus) * u8::from(s_bit) + &result * (1 - u8::from(s_bit));
 
-        exponent = exponent >> 1;
-        base = (base * base) % modulus;
+        exp >>= 1u8;
+        base = (base.pow(2)) % modulus;
     }
     result
 }
