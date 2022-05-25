@@ -12,5 +12,5 @@ pub mod primality;
 use crate::key_generator::KeyPair;
 
 fn main() {
-    let _key_pair = KeyPair::generate_keys(16, true);
+    let _key_pair = KeyPair::generate_keys(8, true);
 }

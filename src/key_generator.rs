@@ -1,6 +1,7 @@
 use crate::euclidean::euclides_extended;
 use crate::primality::PrimeGenerator;
-use num_bigint::{BigUint, ToBigUint};
+use num_bigint::BigUint;
+use num_traits::{One, Signed};
 
 pub struct Key {
     pub d_e: BigUint,
@@ -13,7 +14,8 @@ pub struct KeyPair {
 
 impl KeyPair {
     /// Generates the values of P, Q, N Phi(N), E and D
-
+    ///
+    /// **Returns:** a KeyPair with a Public and a Private Key
     pub fn generate_keys(max_bits: u16, verbose: bool) -> KeyPair {
         if max_bits > 64 {
             panic!("Key size not supported!");
@@ -26,18 +28,18 @@ impl KeyPair {
         let mut d: BigUint;
         let mut gen: PrimeGenerator = PrimeGenerator::new();
 
-        // Step 1: Select two big prime numbers P and Q
-        // Step 2: Calculate N = P * Q
-        // Step 3: Calculate λ(N) = (P-1) * (Q-1)
-        // Step 4: Achar um e tal que gcd(e, ø(n)) = 1 ; 1 < e < ø(n)
-        // Step 5: Calcular d tal que e*d = 1 (mod ø(n))
+        // Step 1: Select two big prime numbers `P` and `Q`
+        // Step 2: Calculate `N = P * Q`
+        // Step 3: Calculate `λ(N) = (P-1) * (Q-1)`
+        // Step 4: Find a `E` such that `gcd(e, λ(N)) = 1` and `1 < E < λ(N)`
+        // Step 5: Calculate `D` such that `E*D = 1 (mod λ(N))`
 
         loop {
             p = gen.random_prime(max_bits);
             q = gen.random_prime(max_bits);
 
             n = &p * &q;
-            totn = (&p - 1u8.to_biguint().unwrap()) * (&q - 1u8.to_biguint().unwrap());
+            totn = (&p - 1u8) * (&q - 1u8);
 
             loop {
                 e = gen.random_prime(max_bits);
@@ -47,10 +49,11 @@ impl KeyPair {
                 }
             }
 
-            (_, d, _) = euclides_extended(&mut e, &mut totn);
-            d = (d % &totn * 2u8.to_biguint().unwrap()) % &totn;
+            let (_, d_tmp, _) = euclides_extended(&e, &totn);
+            d = d_tmp.abs().to_biguint().unwrap();
+            d = (d % &totn + &totn) % &totn;
 
-            if (&e * &d % &totn) == 1u8.to_biguint().unwrap() {
+            if (&e * &d % &totn) == One::one() {
                 break;
             }
         }
