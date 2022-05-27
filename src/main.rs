@@ -38,9 +38,9 @@ fn create_command() -> Command<'static> {
         .arg_required_else_help(true)
         .subcommand(
             Command::new("keygen")
-            .about("Generates a Public and a Private key, and stores then in files inside keys folder")
-            .arg(arg!(-s --key_size <KEY_SIZE> "Key size in bits."))
-            .arg(arg!(-o --path_out <OUT_PATH> "Path to save key file"))
+            .about("Generates a Public and a Private key, and stores then in output file.")
+            .arg(arg!(-s --key_size <KEY_SIZE> "Key size in bits (Min=32; Max=4096)."))
+            .arg(arg!(-o --path_out <OUT_PATH> "Path to save key file (Ex: keys/key)."))
             .arg_required_else_help(true),
         )
     // .subcommand(
