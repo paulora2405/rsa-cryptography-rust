@@ -9,3 +9,4 @@ edition = "2021"
 rand = "0.8.5"
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
+clap = "3.1.18"
