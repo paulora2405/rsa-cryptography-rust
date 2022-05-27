@@ -22,7 +22,8 @@ impl KeyPair {
         key_size: u16,
         key_out_path: &str,
         use_default_exponent: bool,
-        verbose: bool,
+        print_results: bool,
+        print_progress: bool,
     ) -> KeyPair {
         if key_size > 4096 || key_size < 32 {
             panic!("Key size not supported!");
@@ -43,38 +44,64 @@ impl KeyPair {
         // Step 4: Find a `E` such that `gcd(e, λ(N)) = 1` and `1 < E < λ(N)`
         // Step 5: Calculate `D` such that `E*D = 1 (mod λ(N))`
 
+        macro_rules! printprogress {
+            ($a: expr, $b: expr) => {
+                if print_progress {
+                    print!($a, $b);
+                    std::io::stdout().flush().expect("Could not flush stdout");
+                }
+            };
+            ($a: expr) => {
+                if print_progress {
+                    print!($a);
+                    std::io::stdout().flush().expect("Could not flush stdout");
+                }
+            };
+        }
+
         loop {
             attempts += 1;
+            printprogress!("Attempt number {}\n", attempts);
+            printprogress!("Generating P...");
             p = gen.random_prime(max_bits);
+            printprogress!("DONE\nGenerating Q...");
             q = gen.random_prime(max_bits);
             while p == q {
                 q = gen.random_prime(max_bits);
             }
+            printprogress!("DONE\n");
 
+            printprogress!("Calculating Public Key (N)...");
             n = &p * &q;
+            printprogress!("DONE\n");
             totn = (&p - 1u8) * (&q - 1u8);
 
-            loop {
-                if !use_default_exponent {
+            if !use_default_exponent {
+                printprogress!("Calculating Public Key (E)...");
+                loop {
                     e = gen.random_prime(max_bits);
                     if e < totn {
+                        printprogress!("DONE\n");
                         break;
-                    }
-                } else {
-                    e = BigUint::from(65_537u32);
-                    assert!(e < totn);
-                    break;
-                };
+                    };
+                }
+            } else {
+                e = BigUint::from(65_537u32);
+                assert!(e < totn);
             }
 
+            printprogress!("Calculating Private Key (D)...");
             let (_, d_tmp, _) = euclides_extended(&e, &totn);
             d = d_tmp.abs().to_biguint().unwrap();
             d = (d % &totn + &totn) % &totn;
 
             if (&e * &d % &totn) == One::one() {
+                printprogress!("DONE\n");
                 break;
             }
+            printprogress!("\nCould not find a valid Private Key...RETRYING\n");
         }
+        printprogress!("Key Pair successfully generated\n");
 
         let key_pair = KeyPair {
             pub_key: Key {
@@ -87,7 +114,7 @@ impl KeyPair {
             },
         };
 
-        if verbose {
+        if print_results {
             println!("Max bits for N: {}", key_size);
             println!("Max bits for P and Q: {}", max_bits);
             println!("Attempts needed: {}", attempts);

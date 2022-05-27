@@ -24,6 +24,7 @@ fn main() {
                     .expect("Key out path arg required"),
                 true,
                 false,
+                true,
             );
         }
         _ => unreachable!(),
