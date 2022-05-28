@@ -3,8 +3,10 @@ use crate::mod_exponentiation::mod_pow;
 use crate::primality::PrimeGenerator;
 use num_bigint::BigUint;
 use num_traits::{Num, One, Signed};
+use regex::Regex;
 use std::fs::File;
 use std::io::Write;
+use std::process::exit;
 
 #[derive(Debug, PartialEq)]
 pub struct Key {
@@ -188,22 +190,61 @@ impl KeyPair {
         }
     }
 
+    pub fn is_valid_key_file(
+        file_data: &Vec<&str>,
+        key_path: &str,
+        is_public_key_file: bool,
+    ) -> bool {
+        let reg = Regex::new(r"^[0-9a-f]+$").unwrap();
+
+        if is_public_key_file
+            && file_data.len() == 2
+            && file_data[0].trim() == "rsa-rust"
+            && reg.is_match(file_data[1].trim())
+            || is_public_key_file
+                && file_data.len() == 3
+                && file_data[0].trim() == "rsa-rust-dex"
+                && reg.is_match(file_data[1].trim())
+                && reg.is_match(file_data[2].trim())
+            || !is_public_key_file
+                && file_data.len() == 4
+                && file_data[0] == "-----BEGIN RSA-RUST PRIVATE KEY-----"
+                && file_data[2] == "-----END RSA-RUST PRIVATE KEY-----"
+                && reg.is_match(file_data[1].trim())
+        {
+            return true;
+        }
+
+        if is_public_key_file {
+            eprintln!("Public key `{}.pub` is invalid!", key_path);
+        } else {
+            eprintln!("Private key `{}` is invalid!", key_path);
+        }
+        false
+    }
+
     /// Reads and validades Public and Private key files from `key_in_path`
     ///
     /// **Returns** KeyPair instance parsed from keys files
     pub fn read_key_files(key_in_path: &str) -> KeyPair {
         let priv_key_buf = std::fs::read_to_string(key_in_path).expect("Could not read file");
         let priv_key_buf: Vec<&str> = priv_key_buf.split('\n').collect();
-        let d = priv_key_buf[1].trim();
+        if !KeyPair::is_valid_key_file(&priv_key_buf, &key_in_path, false) {
+            exit(1);
+        }
 
         let pub_key_buf =
             std::fs::read_to_string(key_in_path.to_owned() + ".pub").expect("Could not read file");
         let pub_key_buf: Vec<&str> = pub_key_buf.split(' ').collect();
-        let n = pub_key_buf[1].trim();
+        if !KeyPair::is_valid_key_file(&pub_key_buf, &key_in_path, true) {
+            exit(1);
+        }
 
-        let d: BigUint = BigUint::from_str_radix(d, 16).unwrap();
+        let n = pub_key_buf[1].trim();
         let n: BigUint = BigUint::from_str_radix(n, 16).unwrap();
-        let e: BigUint = if pub_key_buf[0] == "rsa-rust-ndex" {
+        let d = priv_key_buf[1].trim();
+        let d: BigUint = BigUint::from_str_radix(d, 16).unwrap();
+        let e: BigUint = if pub_key_buf[0].trim() == "rsa-rust-ndex" {
             BigUint::from_str_radix(pub_key_buf[2].trim(), 16).unwrap()
         } else {
             BigUint::from(65_537u32)
@@ -272,6 +313,11 @@ mod tests {
         KeyPair::write_key_files("keys/tests/dex_key", &key_pair);
         let read_key_pair = KeyPair::read_key_files("keys/tests/dex_key");
         assert_eq!(read_key_pair, key_pair);
+    }
+
+    #[test]
+    fn test_valid_key() {
+        let _ = KeyPair::read_key_files("keys/tests/dex_key");
     }
 
     #[test]
