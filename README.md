@@ -5,10 +5,17 @@ To just build the binary:
 ```sh
 $ cargo build --release
 ```
-To build and run:
+
+The binary will be in `target/release/rsa-implementation-rust`
+You can copy it to another directory with
 ```sh
-$ cargo run --release
+$ cp target/release/rsa-implementation-rust ./rsa-rust
 ```
+And then run it from there by doing
+```sh
+$ ./rsa-rust
+```
+The cli interface will guide you on how to use the avaiable subcommands
 
 ## The math of RSA encryption
 
