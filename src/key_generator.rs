@@ -1,14 +1,18 @@
 use crate::euclidean::euclides_extended;
+use crate::mod_exponentiation::mod_pow;
 use crate::primality::PrimeGenerator;
 use num_bigint::BigUint;
-use num_traits::{One, Signed};
+use num_traits::{Num, One, Signed};
 use std::fs::File;
 use std::io::Write;
 
+#[derive(Debug, PartialEq)]
 pub struct Key {
     pub d_e: BigUint,
     pub n: BigUint,
 }
+
+#[derive(Debug, PartialEq)]
 pub struct KeyPair {
     pub pub_key: Key,
     pub priv_key: Key,
@@ -20,7 +24,6 @@ impl KeyPair {
     /// **Returns:** a KeyPair with a Public and a Private Key
     pub fn generate_keys(
         key_size: u16,
-        key_out_path: &str,
         use_default_exponent: bool,
         print_results: bool,
         print_progress: bool,
@@ -128,15 +131,49 @@ impl KeyPair {
             }
             println!("D = {}", d);
         }
+
+        key_pair
+    }
+
+    /// Validates key pair
+    ///
+    /// **Returns** true if valid
+    pub fn is_valid(&self) -> bool {
+        if self.pub_key.n != self.priv_key.n || self.pub_key.d_e > self.pub_key.n {
+            return false;
+        }
+        let plain_msg = BigUint::from(12345678u64);
+        let encoded_msg = mod_pow(&plain_msg, &self.pub_key.d_e, &self.pub_key.n);
+        let decoded_msg = mod_pow(&encoded_msg, &self.priv_key.d_e, &self.priv_key.n);
+        if plain_msg != decoded_msg {
+            return false;
+        }
+        true
+    }
+
+    /// Validates and writes Public and Private key files to `key_out_path`
+    pub fn write_key_files(key_out_path: &str, key_pair: &KeyPair) {
+        let use_default_exponent: bool = key_pair.pub_key.d_e == BigUint::from(65_537u32);
+
+        // Validation process
+        if !key_pair.is_valid() {
+            eprint!("Key Pair not valid!");
+            panic!("Key Pair not valid!");
+        }
+
+        // Write to key files
         let mut file = File::create(key_out_path).expect("Could not open output path");
+
         let content = String::from("-----BEGIN RSA-RUST PRIVATE KEY-----\n")
             + &key_pair.priv_key.d_e.to_str_radix(16)
             + "\n-----END RSA-RUST PRIVATE KEY-----\n";
+
         file.write_all(content.as_bytes())
             .expect("Error writing to file");
 
         let mut file =
             File::create(key_out_path.to_owned() + ".pub").expect("Could not open output path");
+
         if use_default_exponent {
             let content = String::from("rsa-rust ") + &key_pair.pub_key.n.to_str_radix(16) + "\n";
             file.write_all(content.as_bytes())
@@ -144,12 +181,113 @@ impl KeyPair {
         } else {
             let content = String::from("rsa-rust-ndex ")
                 + &key_pair.pub_key.n.to_str_radix(16)
-                + "\n"
+                + " "
                 + &key_pair.pub_key.d_e.to_str_radix(16)
                 + "\n";
             file.write_all(content.as_bytes()).expect("writing to file");
         }
+    }
+
+    /// Reads and validades Public and Private key files from `key_in_path`
+    ///
+    /// **Returns** KeyPair instance parsed from keys files
+    pub fn read_key_files(key_in_path: &str) -> KeyPair {
+        let priv_key_buf = std::fs::read_to_string(key_in_path).expect("Could not read file");
+        let priv_key_buf: Vec<&str> = priv_key_buf.split('\n').collect();
+        let d = priv_key_buf[1].trim();
+
+        let pub_key_buf =
+            std::fs::read_to_string(key_in_path.to_owned() + ".pub").expect("Could not read file");
+        let pub_key_buf: Vec<&str> = pub_key_buf.split(' ').collect();
+        let n = pub_key_buf[1].trim();
+
+        let d: BigUint = BigUint::from_str_radix(d, 16).unwrap();
+        let n: BigUint = BigUint::from_str_radix(n, 16).unwrap();
+        let e: BigUint = if pub_key_buf[0] == "rsa-rust-ndex" {
+            BigUint::from_str_radix(pub_key_buf[2].trim(), 16).unwrap()
+        } else {
+            BigUint::from(65_537u32)
+        };
+
+        let key_pair = KeyPair {
+            pub_key: Key {
+                d_e: e,
+                n: n.clone(),
+            },
+            priv_key: Key { d_e: d, n },
+        };
+
+        // Validation process
+        if !key_pair.is_valid() {
+            eprint!("Key Pair not valid!");
+            panic!("Key Pair not valid!");
+        }
 
         key_pair
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_key_validation() {
+        let key_pair = KeyPair {
+            pub_key: Key {
+                d_e: BigUint::from(65_537u32), // default value isn't present in key file
+                n: BigUint::from(2523461377u64), // 0x9668f701
+            },
+            priv_key: Key {
+                d_e: BigUint::from(343637873u32), // 0x147b7f71
+                n: BigUint::from(2523461377u64),  // 0x9668f701
+            },
+        };
+        assert!(key_pair.is_valid());
+        let key_pair = KeyPair {
+            pub_key: Key {
+                d_e: BigUint::from(23447u64),   // 0x5b97
+                n: BigUint::from(298224757u64), // 0x11c68c75
+            },
+            priv_key: Key {
+                d_e: BigUint::from(58335719u64), // 0x37a21e7
+                n: BigUint::from(298224757u64),  // 0x11c68c75
+            },
+        };
+        assert!(key_pair.is_valid());
+    }
+
+    #[test]
+    fn test_key_import_dex() {
+        let key_pair = KeyPair {
+            pub_key: Key {
+                d_e: BigUint::from(65_537u32), // default value isn't present in key file
+                n: BigUint::from(2523461377u64), // 0x9668f701
+            },
+            priv_key: Key {
+                d_e: BigUint::from(343637873u32), // 0x147b7f71
+                n: BigUint::from(2523461377u64),  // 0x9668f701
+            },
+        };
+        KeyPair::write_key_files("keys/tests/dex_key", &key_pair);
+        let read_key_pair = KeyPair::read_key_files("keys/tests/dex_key");
+        assert_eq!(read_key_pair, key_pair);
+    }
+
+    #[test]
+    fn test_key_import_ndex() {
+        let key_pair = KeyPair {
+            pub_key: Key {
+                d_e: BigUint::from(23447u64),   // 0x5b97
+                n: BigUint::from(298224757u64), // 0x11c68c75
+            },
+            priv_key: Key {
+                d_e: BigUint::from(58335719u64), // 0x37a21e7
+                n: BigUint::from(298224757u64),  // 0x11c68c75
+            },
+        };
+        KeyPair::write_key_files("keys/tests/ndex_key", &key_pair);
+        let read_key_pair = KeyPair::read_key_files("keys/tests/ndex_key");
+        assert_eq!(read_key_pair, key_pair);
     }
 }

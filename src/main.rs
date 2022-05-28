@@ -12,19 +12,22 @@ fn main() {
 
     match matches.subcommand() {
         Some(("keygen", sub_matches)) => {
-            let _ = KeyPair::generate_keys(
+            let key_pair = KeyPair::generate_keys(
                 u16::from_str(
                     sub_matches
                         .value_of("key_size")
                         .expect("Key size arg required"),
                 )
                 .expect("Failed to parse key size argument!"),
+                !sub_matches.is_present("use_ndex"),
+                false,
+                true,
+            );
+            KeyPair::write_key_files(
                 sub_matches
                     .value_of("path_out")
                     .expect("Key out path arg required"),
-                true,
-                false,
-                true,
+                &key_pair,
             );
         }
         _ => unreachable!(),
@@ -33,7 +36,7 @@ fn main() {
 
 fn create_command() -> Command<'static> {
     Command::new("rsa-rust")
-        .about("RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.")
+        .about("RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-implementation-rust")
         .author("Paulo Roberto Albuquerque")
         .subcommand_required(true)
         .arg_required_else_help(true)
@@ -42,7 +45,8 @@ fn create_command() -> Command<'static> {
             .about("Generates a Public and a Private key, and stores then in output file.")
             .arg(arg!(-s --key_size <KEY_SIZE> "Key size in bits (Min=32; Max=4096)."))
             .arg(arg!(-o --path_out <OUT_PATH> "Path to save key file (Ex: keys/key)."))
-            .arg_required_else_help(true),
+            .arg_required_else_help(true)
+            .arg(arg!(--use_ndex "Generates a key with non default exponent value."))
         )
     // .subcommand(
     //     Command::new("encrypt")
