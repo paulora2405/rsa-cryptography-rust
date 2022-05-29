@@ -1,6 +1,7 @@
 use num_bigint::BigUint;
 use num_traits::{One, Zero};
 
+#[must_use]
 pub fn mod_pow(base: &BigUint, exponent: &BigUint, modulus: &BigUint) -> BigUint {
     let mut result = BigUint::from(1u8);
     let mut base_ = base % modulus;

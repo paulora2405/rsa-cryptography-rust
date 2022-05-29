@@ -15,7 +15,8 @@ impl Default for PrimeGenerator {
 }
 
 impl PrimeGenerator {
-    /// Creates new PrimeGenerator and initializes rng member
+    /// Returns new `PrimeGenerator` instance with `rng` member properly initialized.
+    #[must_use]
     pub fn new() -> Self {
         let prime = Zero::zero();
         let odd = Zero::zero();

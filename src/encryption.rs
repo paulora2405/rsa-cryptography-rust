@@ -1,9 +1,11 @@
 use num_bigint::BigUint;
 
+#[must_use]
 pub fn text_to_numeric(text: &String) -> BigUint {
     BigUint::from_bytes_le(text.as_bytes())
 }
 
+#[must_use]
 pub fn numeric_to_text(num: &BigUint) -> String {
     String::from_utf8(num.to_bytes_le()).expect("Could not convert Numeric value to a String")
 }

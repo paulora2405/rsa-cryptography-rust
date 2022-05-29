@@ -20,18 +20,18 @@ pub struct KeyPair {
 }
 
 impl KeyPair {
-    /// Generates the values of P, Q, N Phi(N), E and D
-    ///
-    /// **Returns:** a KeyPair with a Public and a Private Key
+    /// Generates the values of P, Q, N Phi(N), E and D and
+    /// returns a `KeyPair` with a Public and a Private Key.
+    /// # Panics
+    /// Panics if `key_size` is not in (32, 4096) interval
+    #[must_use]
     pub fn generate_keys(
         key_size: u16,
         use_default_exponent: bool,
         print_results: bool,
         print_progress: bool,
     ) -> KeyPair {
-        if !(32..=4096).contains(&key_size) {
-            panic!("Key size not supported!");
-        }
+        assert!((32..=4096).contains(&key_size), "Key size not supported!");
         let max_bits = key_size / 2;
         let mut attempts = 0u32;
         let mut p: BigUint;
@@ -80,7 +80,10 @@ impl KeyPair {
             printprogress!("DONE\n");
             totn = (&p - 1u8) * (&q - 1u8);
 
-            if !use_default_exponent {
+            if use_default_exponent {
+                e = BigUint::from(65_537u32);
+                assert!(e < totn, "Tot(N) is smaller than `65_537u32`");
+            } else {
                 printprogress!("Calculating Public Key (E)...");
                 loop {
                     e = gen.random_prime(max_bits);
@@ -89,9 +92,6 @@ impl KeyPair {
                         break;
                     };
                 }
-            } else {
-                e = BigUint::from(65_537u32);
-                assert!(e < totn);
             }
 
             printprogress!("Calculating Private Key (D)...");
@@ -136,14 +136,13 @@ impl KeyPair {
         key_pair
     }
 
-    /// Validates key pair
-    ///
-    /// **Returns** true if valid
+    /// Returns `true` if `KeyPair` is valid.
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         if self.pub_key.n != self.priv_key.n || self.pub_key.d_e > self.pub_key.n {
             return false;
         }
-        let plain_msg = BigUint::from(12345678u64);
+        let plain_msg = BigUint::from(12_345_678u64);
         let encoded_msg = mod_pow(&plain_msg, &self.pub_key.d_e, &self.pub_key.n);
         let decoded_msg = mod_pow(&encoded_msg, &self.priv_key.d_e, &self.priv_key.n);
         if plain_msg != decoded_msg {
@@ -152,14 +151,14 @@ impl KeyPair {
         true
     }
 
-    /// Validates and writes Public and Private key files to `key_out_path`
+    /// Validates and writes Public and Private key files to `key_out_path`.
+    /// # Panics
+    /// Panics if `key_pair` isn't valid.
     pub fn write_key_files(key_out_path: &str, key_pair: &KeyPair) {
         let use_default_exponent: bool = key_pair.pub_key.d_e == BigUint::from(65_537u32);
 
         // Validation process
-        if !key_pair.is_valid() {
-            panic!("Key Pair not valid!");
-        }
+        assert!(key_pair.is_valid(), "Key Pair not valid!");
 
         // Write to key files
         let mut file = File::create(key_out_path).expect("Could not open output path");
@@ -188,6 +187,18 @@ impl KeyPair {
         }
     }
 
+    /// Returns `true` if contents of key file is formatted correctly.
+    /// # Examples
+    /// ```rust
+    /// let priv_key_buf = std::fs::read_to_string("key").expect("Err");
+    /// let priv_key_buf: Vec<&str> = priv_key_buf.split('\n').collect();
+    /// assert!(KeyPair::is_valid_key_file(&priv_key_buf, false));
+    ///
+    /// let pub_key_buf = std::fs::read_to_string("key.pub").expect("Err");
+    /// let pub_key_buf: Vec<&str> = pub_key_buf.split(' ').collect();
+    /// assert!(KeyPair::is_valid_key_file(&pub_key_buf, true));
+    /// ```
+    #[must_use]
     pub fn is_valid_key_file(file_data: &Vec<&str>, is_public_key_file: bool) -> bool {
         let reg = Regex::new(r"^[0-9a-f]+$").unwrap();
 
@@ -211,22 +222,27 @@ impl KeyPair {
         false
     }
 
-    /// Reads and validades Public and Private key files from `key_in_path`
-    ///
-    /// **Returns** KeyPair instance parsed from keys files
+    /// Reads and validades Public and Private key files from `key_in_path` and returns `KeyPair` instance parsed from keys files.
+    /// # Panics
+    /// Panics if the private or public key file isn't formatted correctly.
+    #[must_use]
     pub fn read_key_files(key_in_path: &str) -> KeyPair {
         let priv_key_buf = std::fs::read_to_string(key_in_path).expect("Could not read file");
         let priv_key_buf: Vec<&str> = priv_key_buf.split('\n').collect();
-        if !KeyPair::is_valid_key_file(&priv_key_buf, false) {
-            panic!("Private key `{}` is invalid!", key_in_path);
-        }
+        assert!(
+            KeyPair::is_valid_key_file(&priv_key_buf, false),
+            "Private key `{}` is invalid!",
+            key_in_path
+        );
 
         let pub_key_buf =
             std::fs::read_to_string(key_in_path.to_owned() + ".pub").expect("Could not read file");
         let pub_key_buf: Vec<&str> = pub_key_buf.split(' ').collect();
-        if !KeyPair::is_valid_key_file(&pub_key_buf, true) {
-            panic!("Public key `{}.pub` is invalid!", key_in_path);
-        }
+        assert!(
+            KeyPair::is_valid_key_file(&pub_key_buf, true),
+            "Public key `{}.pub` is invalid!",
+            key_in_path
+        );
 
         let n = pub_key_buf[1].trim();
         let n: BigUint = BigUint::from_str_radix(n, 16).unwrap();
@@ -247,9 +263,7 @@ impl KeyPair {
         };
 
         // Validation process
-        if !key_pair.is_valid() {
-            panic!("Key Pair not valid!");
-        }
+        assert!(key_pair.is_valid(), "Key Pair not valid!");
 
         key_pair
     }

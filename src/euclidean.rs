@@ -22,6 +22,7 @@ use num_traits::{One, Zero};
 //     *a
 // }
 
+#[must_use]
 pub fn euclides_extended(a: &BigUint, b: &BigUint) -> (BigInt, BigInt, BigInt) {
     let (mut old_r, mut rem) = (BigInt::from(a.clone()), BigInt::from(b.clone()));
     let (mut old_s, mut coeff_s) = (One::one(), Zero::zero());
