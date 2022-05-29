@@ -3,7 +3,7 @@ use num_traits::{One, Zero};
 
 pub fn mod_pow(base: &BigUint, exponent: &BigUint, modulus: &BigUint) -> BigUint {
     let mut result = BigUint::from(1u8);
-    let mut base_ = *&base % *&modulus;
+    let mut base_ = base % modulus;
     let mut exp = exponent.clone();
 
     while !exp.is_zero() {
@@ -11,7 +11,7 @@ pub fn mod_pow(base: &BigUint, exponent: &BigUint, modulus: &BigUint) -> BigUint
         result = ((&result * &base_) % modulus) * u8::from(s_bit) + &result * (1 - u8::from(s_bit));
 
         exp >>= 1u8;
-        base_ = (base_.pow(2)) % *&modulus;
+        base_ = (base_.pow(2)) % modulus;
     }
     result
 }

@@ -8,6 +8,12 @@ pub struct PrimeGenerator {
     rng: ThreadRng,
 }
 
+impl Default for PrimeGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrimeGenerator {
     /// Creates new PrimeGenerator and initializes rng member
     pub fn new() -> Self {
@@ -18,7 +24,7 @@ impl PrimeGenerator {
     }
 
     fn is_composite(n: &BigUint, a: &BigUint, d: &BigUint, s: &BigUint) -> bool {
-        let mut x: BigUint = mod_pow(&a, &d, &n);
+        let mut x: BigUint = mod_pow(a, d, n);
 
         if x.is_one() || x == n - 1u8 {
             return false;
@@ -36,6 +42,9 @@ impl PrimeGenerator {
         true
     }
 
+    /// Miller-Rabin primality test.
+    ///
+    /// **Returns** true if `n` is likely to be prime.
     fn miller_rabin(n: &BigUint) -> bool {
         if *n < BigUint::from(2u8) {
             return false;
@@ -53,7 +62,7 @@ impl PrimeGenerator {
             if *n == a.into() {
                 return true;
             }
-            if PrimeGenerator::is_composite(&n, &a.into(), &d, &r) {
+            if PrimeGenerator::is_composite(n, &a.into(), &d, &r) {
                 return false;
             }
         }
@@ -85,5 +94,20 @@ impl PrimeGenerator {
         self.odd = self.rng.gen_biguint_range(&low, &max_num);
         self.odd.set_bit(0, true);
         self.odd.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_miller_rabbin() {
+        let p = 13u8;
+        let np = 27u8;
+        let bp = BigUint::from(918020423304243854760595069249u128);
+        assert!(PrimeGenerator::miller_rabin(&BigUint::from(p)));
+        assert!(!PrimeGenerator::miller_rabin(&BigUint::from(np)));
+        assert!(PrimeGenerator::miller_rabin(&bp));
     }
 }

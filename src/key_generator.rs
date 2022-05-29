@@ -29,7 +29,7 @@ impl KeyPair {
         print_results: bool,
         print_progress: bool,
     ) -> KeyPair {
-        if key_size > 4096 || key_size < 32 {
+        if !(32..=4096).contains(&key_size) {
             panic!("Key size not supported!");
         }
         let max_bits = key_size / 2;
