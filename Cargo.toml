@@ -11,3 +11,4 @@ num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
 clap = "3.1.18"
 regex = "1.5.6"
+base64 = "0.13.0"
