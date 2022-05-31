@@ -1,4 +1,4 @@
-# RSA Implementation with Rust-lang
+# RSA Cryptography Implementation with Rust-lang
 
 ## About RSA
 RSA (Rivest–Shamir–Adleman) is a public-key cryptosystem that is widely used for secure data transmission.
