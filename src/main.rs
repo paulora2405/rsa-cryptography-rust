@@ -36,7 +36,7 @@ fn main() {
 
 fn create_command() -> Command<'static> {
     Command::new("rsa-rust")
-        .about("RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-implementation-rust")
+        .about("RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-cryptography-rust")
         .author("Paulo Roberto Albuquerque")
         .subcommand_required(true)
         .arg_required_else_help(true)
