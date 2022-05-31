@@ -200,7 +200,7 @@ impl KeyPair {
     /// ```
     #[must_use]
     pub fn is_valid_key_file(file_data: &Vec<&str>, is_public_key_file: bool) -> bool {
-        let reg = Regex::new(r"^[0-9a-f]+$").unwrap();
+        let reg = Regex::new(r"^[0-9a-f]+$").expect("Regex Error!");
 
         if is_public_key_file
             && file_data.len() == 2
