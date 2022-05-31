@@ -1,6 +1,7 @@
 # Custom
 .vscode/
 keys/
+messages/
 # Symlink to the binary target
 rsa-rust
 
