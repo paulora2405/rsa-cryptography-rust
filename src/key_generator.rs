@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_valid_key() {
+    fn test_invalid_key() {
         let _ = KeyPair::read_key_files("keys/tests/invalid_key");
     }
 
