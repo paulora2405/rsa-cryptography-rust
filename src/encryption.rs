@@ -1,6 +1,6 @@
 use crate::key_generator::Key;
 use crate::mod_exponentiation::mod_pow;
-use base64::{decode, encode};
+use base64::{decode_config, encode_config};
 use num_bigint::BigUint;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -18,7 +18,7 @@ pub fn encrypt_file(file_path: &str, out_path: &str, pub_key: &Key) {
             if ret == 0 {
                 break;
             }
-            buf.truncate(max_bytes - ret);
+            buf.truncate(ret);
             let encoded = text_to_base64_exponentiated(&buf, &pub_key.d_e, &pub_key.n);
             file_out.write(&encoded).expect("Error writing to file");
             break;
@@ -42,7 +42,7 @@ pub fn decrypt_file(file_path: &str, out_path: &str, priv_key: &Key) {
             if ret == 0 {
                 break;
             }
-            buf.truncate(max_bytes - ret);
+            buf.truncate(ret);
             let decoded = base64_to_text_exponentiated(&buf, &priv_key.d_e, &priv_key.n);
             file_out.write(&decoded).expect("Error writing to file");
             break;
@@ -62,7 +62,7 @@ fn text_to_base64_exponentiated(
 ) -> Vec<u8> {
     let numeric = BigUint::from_bytes_be(text_bytes);
     let numeric = mod_pow(&numeric, exponent, modulus);
-    Vec::from(encode(numeric.to_bytes_be()).as_bytes())
+    Vec::from(encode_config(numeric.to_bytes_be(), base64::CRYPT).as_bytes())
 }
 
 /// Receives a encoded text buffer of bytes and a private key, and returns a plain text buffer of bytes.
@@ -72,7 +72,7 @@ fn base64_to_text_exponentiated(
     exponent: &BigUint,
     modulus: &BigUint,
 ) -> Vec<u8> {
-    let decoded = decode(base64_bytes).expect("Error decoding base64 string");
+    let decoded = decode_config(base64_bytes, base64::CRYPT).expect("Error decoding base64 string");
     let numeric = BigUint::from_bytes_be(&decoded);
     let numeric = mod_pow(&numeric, exponent, modulus);
     numeric.to_bytes_be()
@@ -82,6 +82,16 @@ fn base64_to_text_exponentiated(
 mod tests {
     use super::*;
     use crate::key_generator::KeyPair;
+
+    #[test]
+    fn test_encrypt_decrypt() {
+        let plain_file = "messages/simple.txt";
+        let encrypted = "messages/encrypted.txt";
+        let decrypted = "messages/decrypted.txt";
+        let keypair = KeyPair::read_key_files("keys/key");
+        encrypt_file(plain_file, encrypted, &keypair.pub_key);
+        decrypt_file(encrypted, decrypted, &keypair.priv_key);
+    }
 
     #[test]
     fn test_encrypt() {
