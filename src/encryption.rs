@@ -20,12 +20,11 @@ pub fn encrypt_file(file_path: &str, out_path: &str, pub_key: &Key) {
             }
             buf.truncate(ret);
             let encoded = text_to_base64_exponentiated(&buf, &pub_key.d_e, &pub_key.n);
-            file_out.write(&encoded).expect("Error writing to file");
+            file_out.write_all(&encoded).expect("Error writing to file");
             break;
-        } else {
-            let encoded = text_to_base64_exponentiated(&buf, &pub_key.d_e, &pub_key.n);
-            file_out.write(&encoded).expect("Error writing to file");
         }
+        let encoded = text_to_base64_exponentiated(&buf, &pub_key.d_e, &pub_key.n);
+        file_out.write_all(&encoded).expect("Error writing to file");
     }
 }
 
@@ -44,19 +43,18 @@ pub fn decrypt_file(file_path: &str, out_path: &str, priv_key: &Key) {
             }
             buf.truncate(ret);
             let decoded = base64_to_text_exponentiated(&buf, &priv_key.d_e, &priv_key.n);
-            file_out.write(&decoded).expect("Error writing to file");
+            file_out.write_all(&decoded).expect("Error writing to file");
             break;
-        } else {
-            let decoded = base64_to_text_exponentiated(&buf, &priv_key.d_e, &priv_key.n);
-            file_out.write(&decoded).expect("Error writing to file");
         }
+        let decoded = base64_to_text_exponentiated(&buf, &priv_key.d_e, &priv_key.n);
+        file_out.write_all(&decoded).expect("Error writing to file");
     }
 }
 
 /// Receives a plain text buffer of bytes and a public key, and returns a base64 encrypted buffer of bytes.
 #[must_use]
 fn text_to_base64_exponentiated(
-    text_bytes: &Vec<u8>,
+    text_bytes: &[u8],
     exponent: &BigUint,
     modulus: &BigUint,
 ) -> Vec<u8> {
@@ -85,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_decrypt() {
-        let plain_file = "messages/simple.txt";
+        let plain_file = "messages/lorem.txt";
         let encrypted = "messages/encrypted.txt";
         let decrypted = "messages/decrypted.txt";
         let keypair = KeyPair::read_key_files("keys/key");
