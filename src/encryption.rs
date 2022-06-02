@@ -2,10 +2,21 @@ use crate::key_generator::Key;
 use crate::mod_exponentiation::mod_pow;
 use base64::{decode_config, encode_config};
 use num_bigint::BigUint;
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
+use std::path::{Path, MAIN_SEPARATOR};
 
 pub fn encrypt_file(file_path: &str, out_path: &str, pub_key: &Key) {
+    if !Path::new(file_path).exists() {
+        let file_name: Vec<&str> = file_path.rsplit(MAIN_SEPARATOR).collect();
+        if file_name.len() > 1 {
+            let file_name = file_name.first().expect("Error at parent dir separation");
+            let parent_dir = file_path
+                .strip_suffix(file_name)
+                .expect("Error strinping suffix");
+            create_dir_all(parent_dir).expect("Error creating parent directories");
+        }
+    }
     let mut file_in = File::open(file_path).expect("Error opening input file");
     let mut file_out = File::create(out_path).expect("Error opening output file");
     let max_bytes = usize::try_from(pub_key.n.bits() / 8u64)
@@ -29,6 +40,16 @@ pub fn encrypt_file(file_path: &str, out_path: &str, pub_key: &Key) {
 }
 
 pub fn decrypt_file(file_path: &str, out_path: &str, priv_key: &Key) {
+    if !Path::new(file_path).exists() {
+        let file_name: Vec<&str> = file_path.rsplit(MAIN_SEPARATOR).collect();
+        if file_name.len() > 1 {
+            let file_name = file_name.first().expect("Error at parent dir separation");
+            let parent_dir = file_path
+                .strip_suffix(file_name)
+                .expect("Error strinping suffix");
+            create_dir_all(parent_dir).expect("Error creating parent directories");
+        }
+    }
     let mut file_in = File::open(file_path).expect("Error opening input file");
     let mut file_out = File::create(out_path).expect("Error opening output file");
     let max_bytes = usize::try_from(priv_key.n.bits() / 8u64)
@@ -80,6 +101,22 @@ fn base64_to_text_exponentiated(
 mod tests {
     use super::*;
     use crate::key_generator::KeyPair;
+
+    #[test]
+    fn test_parent_dir() {
+        // let file_path = "messages/tests/seila.txt";
+        let file_path = "seila.txt";
+        if !Path::new(file_path).exists() {
+            let file_name: Vec<&str> = file_path.rsplit(MAIN_SEPARATOR).collect();
+            if file_name.len() > 1 {
+                let file_name = file_name.first().unwrap();
+                let parent_dir = file_path
+                    .strip_suffix(file_name)
+                    .expect("Error strinping suffix");
+                create_dir_all(parent_dir).expect("Error creating parent directories");
+            }
+        }
+    }
 
     #[test]
     fn test_encrypt_decrypt() {

@@ -4,8 +4,9 @@ use crate::primality::PrimeGenerator;
 use num_bigint::BigUint;
 use num_traits::{Num, One, Signed};
 use regex::Regex;
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::Write;
+use std::path::{Path, MAIN_SEPARATOR};
 
 #[derive(Debug, PartialEq)]
 pub struct Key {
@@ -155,6 +156,16 @@ impl KeyPair {
     /// # Panics
     /// Panics if `key_pair` isn't valid.
     pub fn write_key_files(key_out_path: &str, key_pair: &KeyPair) {
+        if !Path::new(key_out_path).exists() {
+            let file_name: Vec<&str> = key_out_path.rsplit(MAIN_SEPARATOR).collect();
+            if file_name.len() > 1 {
+                let file_name = file_name.first().expect("Error at parent dir separation");
+                let parent_dir = key_out_path
+                    .strip_suffix(file_name)
+                    .expect("Error strinping suffix");
+                create_dir_all(parent_dir).expect("Error creating parent directories");
+            }
+        }
         let use_default_exponent: bool = key_pair.pub_key.d_e == BigUint::from(65_537u32);
 
         // Validation process
@@ -227,6 +238,16 @@ impl KeyPair {
     /// Panics if the private or public key file isn't formatted correctly.
     #[must_use]
     pub fn read_key_files(key_in_path: &str) -> KeyPair {
+        if !Path::new(key_in_path).exists() {
+            let file_name: Vec<&str> = key_in_path.rsplit(MAIN_SEPARATOR).collect();
+            if file_name.len() > 1 {
+                let file_name = file_name.first().expect("Error at parent dir separation");
+                let parent_dir = key_in_path
+                    .strip_suffix(file_name)
+                    .expect("Error strinping suffix");
+                create_dir_all(parent_dir).expect("Error creating parent directories");
+            }
+        }
         let priv_key_buf = std::fs::read_to_string(key_in_path).expect("Could not read file");
         let priv_key_buf: Vec<&str> = priv_key_buf.split('\n').collect();
         assert!(
