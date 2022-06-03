@@ -34,15 +34,13 @@ fn main() {
         Some(("encrypt", sub_matches)) => {
             encrypt_file(
                 sub_matches
-                    .value_of("FILE_PATH")
+                    .value_of("file")
                     .expect("Error parsing file path"),
                 sub_matches
-                    .value_of("OUT_PATH")
+                    .value_of("out")
                     .expect("Error parsing output path"),
                 &KeyPair::read_key_files(
-                    sub_matches
-                        .value_of("KEY_PATH")
-                        .expect("Error parsing key path"),
+                    sub_matches.value_of("key").expect("Error parsing key path"),
                 )
                 .pub_key,
             );
@@ -50,15 +48,13 @@ fn main() {
         Some(("decrypt", sub_matches)) => {
             decrypt_file(
                 sub_matches
-                    .value_of("FILE_PATH")
+                    .value_of("file")
                     .expect("Error parsing file path"),
                 sub_matches
-                    .value_of("OUT_PATH")
+                    .value_of("out")
                     .expect("Error parsing output path"),
                 &KeyPair::read_key_files(
-                    sub_matches
-                        .value_of("KEY_PATH")
-                        .expect("Error parsing key path"),
+                    sub_matches.value_of("key").expect("Error parsing key path"),
                 )
                 .priv_key,
             );
