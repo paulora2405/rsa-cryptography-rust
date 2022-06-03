@@ -34,13 +34,15 @@ fn main() {
         Some(("encrypt", sub_matches)) => {
             encrypt_file(
                 sub_matches
-                    .value_of("file")
+                    .value_of("file_path")
                     .expect("Error parsing file path"),
                 sub_matches
-                    .value_of("out")
+                    .value_of("out_path")
                     .expect("Error parsing output path"),
                 &KeyPair::read_key_files(
-                    sub_matches.value_of("key").expect("Error parsing key path"),
+                    sub_matches
+                        .value_of("key_path")
+                        .expect("Error parsing key path"),
                 )
                 .pub_key,
             );
@@ -48,13 +50,15 @@ fn main() {
         Some(("decrypt", sub_matches)) => {
             decrypt_file(
                 sub_matches
-                    .value_of("file")
+                    .value_of("file_path")
                     .expect("Error parsing file path"),
                 sub_matches
-                    .value_of("out")
+                    .value_of("out_path")
                     .expect("Error parsing output path"),
                 &KeyPair::read_key_files(
-                    sub_matches.value_of("key").expect("Error parsing key path"),
+                    sub_matches
+                        .value_of("key_path")
+                        .expect("Error parsing key path"),
                 )
                 .priv_key,
             );
@@ -80,17 +84,17 @@ fn create_command() -> Command<'static> {
     .subcommand(
         Command::new("encrypt")
         .about("Encrypts a plain text file using a Public Key.")
-        .arg(arg!(-f --file <FILE_PATH> "Input file path."))
-        .arg(arg!(-o --out <OUTPUT_PATH> "Output file path."))
-        .arg(arg!(-k --key <KEY_PATH> "Path to Public Key (ommit the `.pub`)."))
+        .arg(arg!(-f --file_path <FILE_PATH> "Input file path."))
+        .arg(arg!(-o --out_path <OUTPUT_PATH> "Output file path."))
+        .arg(arg!(-k --key_path <KEY_PATH> "Path to Public Key (ommit the `.pub`)."))
         .arg_required_else_help(true)
     )
     .subcommand(
         Command::new("decrypt")
         .about("Decrypts an encrypted file using a Private Key.")
-        .arg(arg!(-f --file <FILE_PATH> "Input file path."))
-        .arg(arg!(-o --out <OUTPUT_PATH> "Output file path."))
-        .arg(arg!(-k --key <KEY_PATH> "Path to Private Key."))
+        .arg(arg!(-f --file_path <FILE_PATH> "Input file path."))
+        .arg(arg!(-o --out_path <OUTPUT_PATH> "Output file path."))
+        .arg(arg!(-k --key_path <KEY_PATH> "Path to Private Key."))
         .arg_required_else_help(true)
     )
 }
