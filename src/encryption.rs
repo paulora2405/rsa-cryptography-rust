@@ -19,8 +19,12 @@ pub fn encrypt_file(file_path: &str, out_path: &str, pub_key: &Key) {
     }
     let mut file_in = File::open(file_path).expect("Error opening input file");
     let mut file_out = File::create(out_path).expect("Error opening output file");
-    let max_bytes = usize::try_from(pub_key.n.bits() / 8u64)
-        .expect("Could not convert max bytes `u64` to `usize`");
+    let max_bytes: usize = {
+        let nb_bits = pub_key.n.bits();
+        (nb_bits / 8) + (nb_bits & 8 != 0) as u64
+    }
+    .try_into()
+    .expect("Could not convert max bytes `u64` to `usize`");
     let mut buf: Vec<u8> = Vec::new();
     buf.resize(max_bytes, 0u8);
     loop {
@@ -52,8 +56,12 @@ pub fn decrypt_file(file_path: &str, out_path: &str, priv_key: &Key) {
     }
     let mut file_in = File::open(file_path).expect("Error opening input file");
     let mut file_out = File::create(out_path).expect("Error opening output file");
-    let max_bytes = usize::try_from(priv_key.n.bits() / 8u64)
-        .expect("Could not convert bytes `u64` to `usize`");
+    let max_bytes: usize = {
+        let nb_bits = priv_key.n.bits();
+        (nb_bits / 8) + (nb_bits & 8 != 0) as u64
+    }
+    .try_into()
+    .expect("Could not convert max bytes `u64` to `usize`");
     let mut buf: Vec<u8> = Vec::new();
     buf.resize(max_bytes, 0u8);
     loop {
@@ -62,7 +70,7 @@ pub fn decrypt_file(file_path: &str, out_path: &str, priv_key: &Key) {
             if ret == 0 {
                 break;
             }
-            buf.truncate(ret);
+            // buf.truncate(ret);
             let decoded = base64_to_text_exponentiated(&buf, &priv_key.d_e, &priv_key.n);
             file_out.write_all(&decoded).expect("Error writing to file");
             break;
