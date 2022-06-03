@@ -3,6 +3,7 @@ pub mod euclidean;
 pub mod key_generator;
 pub mod mod_exponentiation;
 pub mod primality;
+use crate::encryption::{decrypt_file, encrypt_file};
 use crate::key_generator::KeyPair;
 use clap::{arg, Command};
 use std::str::FromStr;
@@ -30,6 +31,38 @@ fn main() {
                 &key_pair,
             );
         }
+        Some(("encrypt", sub_matches)) => {
+            encrypt_file(
+                sub_matches
+                    .value_of("FILE_PATH")
+                    .expect("Error parsing file path"),
+                sub_matches
+                    .value_of("OUT_PATH")
+                    .expect("Error parsing output path"),
+                &KeyPair::read_key_files(
+                    sub_matches
+                        .value_of("KEY_PATH")
+                        .expect("Error parsing key path"),
+                )
+                .pub_key,
+            );
+        }
+        Some(("decrypt", sub_matches)) => {
+            decrypt_file(
+                sub_matches
+                    .value_of("FILE_PATH")
+                    .expect("Error parsing file path"),
+                sub_matches
+                    .value_of("OUT_PATH")
+                    .expect("Error parsing output path"),
+                &KeyPair::read_key_files(
+                    sub_matches
+                        .value_of("KEY_PATH")
+                        .expect("Error parsing key path"),
+                )
+                .priv_key,
+            );
+        }
         _ => unreachable!(),
     }
 }
@@ -48,12 +81,20 @@ fn create_command() -> Command<'static> {
             .arg_required_else_help(true)
             .arg(arg!(--use_ndex "Generates a key with non default exponent value."))
         )
-    // .subcommand(
-    //     Command::new("encrypt")
-    //     .about("Encrypts a file")
-    //     .arg(arg!(--file <FILE_PATH> "Input file"))
-    //     .arg(arg!(--out <OUTPUT_PATH> "Output file path"))
-    //     .arg(arg!(--key <KEY_PATH> "Path to Public Key"))
-    //     .arg_required_else_help(true)
-    // )
+    .subcommand(
+        Command::new("encrypt")
+        .about("Encrypts a plain text file using a Public Key.")
+        .arg(arg!(-f --file <FILE_PATH> "Input file path."))
+        .arg(arg!(-o --out <OUTPUT_PATH> "Output file path."))
+        .arg(arg!(-k --key <KEY_PATH> "Path to Public Key (ommit the `.pub`)."))
+        .arg_required_else_help(true)
+    )
+    .subcommand(
+        Command::new("decrypt")
+        .about("Decrypts an encrypted file using a Private Key.")
+        .arg(arg!(-f --file <FILE_PATH> "Input file path."))
+        .arg(arg!(-o --out <OUTPUT_PATH> "Output file path."))
+        .arg(arg!(-k --key <KEY_PATH> "Path to Private Key."))
+        .arg_required_else_help(true)
+    )
 }
