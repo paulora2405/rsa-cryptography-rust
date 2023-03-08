@@ -3,98 +3,94 @@ pub mod euclidean;
 pub mod key_generator;
 pub mod mod_exponentiation;
 pub mod primality;
-use crate::encryption::{decrypt_file, encrypt_file};
-use crate::key_generator::KeyPair;
-use clap::{arg, Command};
-use std::str::FromStr;
+
+use crate::{
+    encryption::{decrypt_file, encrypt_file},
+    key_generator::KeyPair,
+};
+use clap::{Parser, Subcommand};
 
 fn main() {
-    let matches = create_command().get_matches();
-
-    match matches.subcommand() {
-        Some(("keygen", sub_matches)) => {
-            let key_pair = KeyPair::generate_keys(
-                u16::from_str(
-                    sub_matches
-                        .value_of("key_size")
-                        .expect("Key size arg required"),
-                )
-                .expect("Failed to parse key size argument!"),
-                !sub_matches.is_present("use_ndex"),
-                false,
-                true,
-            );
-            KeyPair::write_key_files(
-                sub_matches
-                    .value_of("path_out")
-                    .expect("Key out path arg required"),
-                &key_pair,
-            );
+    match RsaCli::parse().sub_command {
+        RsaCommands::Keygen {
+            key_size,
+            out_path,
+            use_ndex,
+            print_results,
+            dont_print_progress,
+        } => {
+            let key_pair =
+                KeyPair::generate_keys(key_size, use_ndex, print_results, dont_print_progress);
+            KeyPair::write_key_files(&out_path, &key_pair);
         }
-        Some(("encrypt", sub_matches)) => {
-            encrypt_file(
-                sub_matches
-                    .value_of("file_path")
-                    .expect("Error parsing file path"),
-                sub_matches
-                    .value_of("out_path")
-                    .expect("Error parsing output path"),
-                &KeyPair::read_key_files(
-                    sub_matches
-                        .value_of("key_path")
-                        .expect("Error parsing key path"),
-                )
-                .pub_key,
-            );
+        RsaCommands::Encrypt {
+            file_path,
+            out_path,
+            key_path,
+        } => {
+            let key = KeyPair::read_key_files(&key_path);
+            encrypt_file(&file_path, &out_path, &key.pub_key);
         }
-        Some(("decrypt", sub_matches)) => {
-            decrypt_file(
-                sub_matches
-                    .value_of("file_path")
-                    .expect("Error parsing file path"),
-                sub_matches
-                    .value_of("out_path")
-                    .expect("Error parsing output path"),
-                &KeyPair::read_key_files(
-                    sub_matches
-                        .value_of("key_path")
-                        .expect("Error parsing key path"),
-                )
-                .priv_key,
-            );
+        RsaCommands::Decrypt {
+            file_path,
+            out_path,
+            key_path,
+        } => {
+            let key = KeyPair::read_key_files(&key_path);
+            decrypt_file(&file_path, &out_path, &key.priv_key);
         }
-        _ => unreachable!(),
     }
 }
 
-fn create_command() -> Command<'static> {
-    Command::new("rsa-rust")
-        .about("RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-cryptography-rust")
-        .author("Paulo Roberto Albuquerque")
-        .subcommand_required(true)
-        .arg_required_else_help(true)
-        .subcommand(
-            Command::new("keygen")
-            .about("Generates a Public and a Private key, and stores then in output file.")
-            .arg(arg!(-s --key_size <KEY_SIZE> "Key size in bits (Min=32; Max=4096)."))
-            .arg(arg!(-o --path_out <OUT_PATH> "Path to save key file (Ex: keys/key)."))
-            .arg_required_else_help(true)
-            .arg(arg!(--use_ndex "Generates a key with non default exponent value."))
-        )
-    .subcommand(
-        Command::new("encrypt")
-        .about("Encrypts a plain text file using a Public Key.")
-        .arg(arg!(-f --file_path <FILE_PATH> "Input file path."))
-        .arg(arg!(-o --out_path <OUTPUT_PATH> "Output file path."))
-        .arg(arg!(-k --key_path <KEY_PATH> "Path to Public Key (ommit the `.pub`)."))
-        .arg_required_else_help(true)
-    )
-    .subcommand(
-        Command::new("decrypt")
-        .about("Decrypts an encrypted file using a Private Key.")
-        .arg(arg!(-f --file_path <FILE_PATH> "Input file path."))
-        .arg(arg!(-o --out_path <OUTPUT_PATH> "Output file path."))
-        .arg(arg!(-k --key_path <KEY_PATH> "Path to Private Key."))
-        .arg_required_else_help(true)
-    )
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct RsaCli {
+    #[command(subcommand)]
+    sub_command: RsaCommands,
+}
+
+#[derive(Subcommand)]
+enum RsaCommands {
+    /// Generates a Public and a Private key, and stores then in output file
+    Keygen {
+        /// Key size in bits (Min=32; Max=4096)
+        #[arg(short, long)]
+        key_size: u16,
+        /// Path to save key file (Ex: ./keys/key)
+        #[arg(short, long)]
+        out_path: String,
+        /// Generates a key with non default exponent value
+        #[arg(short, long, action = clap::ArgAction::SetTrue)]
+        use_ndex: bool,
+        /// Prints the key generation internal results (for nerds only)
+        #[arg(short, long, action = clap::ArgAction::SetTrue)]
+        print_results: bool,
+        /// Prints the progress of the key generation
+        #[arg(short, long, action = clap::ArgAction::SetFalse)]
+        dont_print_progress: bool,
+    },
+    /// Encrypts a plain text file using a Public Key
+    Encrypt {
+        /// Input file path.
+        #[arg(short, long)]
+        file_path: String,
+        /// Output file path
+        #[arg(short, long)]
+        out_path: String,
+        /// Path to Public Key (ommit the `.pub`)
+        #[arg(short, long)]
+        key_path: String,
+    },
+    /// Decrypts an encrypted file using a Private Key
+    Decrypt {
+        /// Input file path.
+        #[arg(short, long)]
+        file_path: String,
+        /// Output file path
+        #[arg(short, long)]
+        out_path: String,
+        /// Path to Private Key
+        #[arg(short, long)]
+        key_path: String,
+    },
 }
