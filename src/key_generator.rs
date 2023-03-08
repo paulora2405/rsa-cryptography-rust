@@ -8,13 +8,13 @@ use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::path::{Path, MAIN_SEPARATOR};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Key {
     pub d_e: BigUint,
     pub n: BigUint,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct KeyPair {
     pub pub_key: Key,
     pub priv_key: Key,
