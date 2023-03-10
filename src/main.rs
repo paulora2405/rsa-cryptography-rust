@@ -59,13 +59,13 @@ enum RsaCommands {
         /// Path to save key file (Ex: ./keys/key)
         #[arg(short, long)]
         out_path: String,
-        /// Generates a key with non default exponent value
+        /// Generates a key with non default exponent value (False by default)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         use_ndex: bool,
-        /// Prints the key generation internal results (for nerds only)
+        /// Prints the key generation internal results (False by default)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         print_results: bool,
-        /// Prints the progress of the key generation
+        /// Prints the progress of the key generation (True by default)
         #[arg(short, long, action = clap::ArgAction::SetFalse)]
         dont_print_progress: bool,
     },
