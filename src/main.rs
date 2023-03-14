@@ -17,10 +17,10 @@ fn main() {
             out_path,
             use_ndex,
             print_results,
-            dont_print_progress,
+            print_progress,
         } => {
             let key_pair =
-                KeyPair::generate_keys(key_size, use_ndex, print_results, dont_print_progress);
+                KeyPair::generate_keys(key_size, !use_ndex, print_results, print_progress);
             KeyPair::write_key_files(&out_path, &key_pair);
         }
         RsaCommands::Encrypt {
@@ -63,11 +63,11 @@ enum RsaCommands {
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         use_ndex: bool,
         /// Prints the key generation internal results (False by default)
-        #[arg(short, long, action = clap::ArgAction::SetTrue)]
+        #[arg(short = 'r', long, action = clap::ArgAction::SetTrue)]
         print_results: bool,
-        /// Prints the progress of the key generation (True by default)
-        #[arg(short, long, action = clap::ArgAction::SetFalse)]
-        dont_print_progress: bool,
+        /// Prints the progress of the key generation (False by default)
+        #[arg(short, long, action = clap::ArgAction::SetTrue)]
+        print_progress: bool,
     },
     /// Encrypts a plain text file using a Public Key
     Encrypt {
