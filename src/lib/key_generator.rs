@@ -1,6 +1,4 @@
-use crate::euclidean::euclides_extended;
-use crate::mod_exponentiation::mod_pow;
-use crate::primality::PrimeGenerator;
+use crate::math::{euclides_extended, mod_pow, PrimeGenerator};
 use num_bigint::BigUint;
 use num_traits::{Num, One, Signed};
 use regex::Regex;

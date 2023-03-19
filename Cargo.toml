@@ -5,11 +5,24 @@ edition = "2021"
 authors = ["Paulo Roberto Albuquerque"]
 description = "RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-cryptography-rust"
 
+[lib]
+name = "rsa_rs"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "rsa-rs-cli"
+path = "src/bin/cli.rs"
+
+[[bin]]
+name = "rsa-rs-gui"
+path = "src/bin/gui.rs"
+
 [dependencies]
 rand = "0.8.5"
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
 clap = { version = "4.0.17", features = ["derive"] }
+clap_complete = "4.1.4"
 regex = "1.5.6"
 base64 = "0.21.0"
 dbg_hex = "0.1.1"

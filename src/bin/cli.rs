@@ -1,14 +1,8 @@
-pub mod encryption;
-pub mod euclidean;
-pub mod key_generator;
-pub mod mod_exponentiation;
-pub mod primality;
-
-use crate::{
+use clap::{Parser, Subcommand};
+use rsa_rs::{
     encryption::{decrypt_file, encrypt_file},
     key_generator::KeyPair,
 };
-use clap::{Parser, Subcommand};
 
 fn main() {
     match RsaCli::parse().sub_command {
