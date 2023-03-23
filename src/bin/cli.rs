@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use rsa_rs::{
+use rrsa_common::{
     encryption::{decrypt_file, encrypt_file},
     key_generator::KeyPair,
 };

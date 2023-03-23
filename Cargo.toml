@@ -1,28 +1,31 @@
 [package]
-name = "rsa-cryptography-rust"
-version = "0.1.0"
+name = "rrsa"
+version = "0.2.0"
 edition = "2021"
 authors = ["Paulo Roberto Albuquerque"]
 description = "RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-cryptography-rust"
 
 [lib]
-name = "rsa_rs"
+name = "rrsa_common"
 path = "src/lib/lib.rs"
 
 [[bin]]
-name = "rsa-rs-cli"
+name = "rrsa-cli"
 path = "src/bin/cli.rs"
 
 [[bin]]
-name = "rsa-rs-gui"
+name = "rrsa-gui"
 path = "src/bin/gui.rs"
 
 [dependencies]
-rand = "0.8.5"
+base64 = "0.21.0"
+clap = { version = "4.0.17", features = ["cargo", "derive"] }
+clap_complete = "4.1.4"
+dbg_hex = "0.1.1"
+directories = "5.0.0"
+eframe = "0.21.3"
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
-clap = { version = "4.0.17", features = ["derive"] }
-clap_complete = "4.1.4"
+rand = "0.8.5"
 regex = "1.5.6"
-base64 = "0.21.0"
-dbg_hex = "0.1.1"
+rfd = "0.11.2"
