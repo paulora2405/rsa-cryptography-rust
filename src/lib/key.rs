@@ -3,6 +3,7 @@ use clap::crate_name;
 use directories::{BaseDirs, ProjectDirs, UserDirs};
 use num_bigint::BigUint;
 use num_traits::{FromPrimitive, Num, One, Signed};
+use regex::Regex;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -40,16 +41,103 @@ impl KeyPair {
         print_results: bool,
         print_progress: bool,
     ) -> KeyPair {
-        todo!()
+        assert!((32..=4096).contains(&key_size), "Key size not supported!");
+
+        let max_bits = key_size / 2;
+        let mut attempts = 0u32;
+        let mut p: BigUint;
+        let mut q: BigUint;
+        let mut n: BigUint;
+        let mut totn: BigUint;
+        let mut e: BigUint;
+        let mut d: BigUint;
+        let mut gen: PrimeGenerator = PrimeGenerator::new();
+
+        // Step 1: Select two big prime numbers `P` and `Q`
+        // Step 2: Calculate `N = P * Q`
+        // Step 3: Calculate `λ(N) = (P-1) * (Q-1)`
+        // Step 4: Find a `E` such that `gcd(e, λ(N)) = 1` and `1 < E < λ(N)`
+        // Step 5: Calculate `D` such that `E*D = 1 (mod λ(N))`
+
+        loop {
+            attempts += 1;
+            print_flush(&format!("Attempt number {}\n", attempts), print_progress);
+            print_flush("Generating P...", print_progress);
+            p = gen.random_prime(max_bits);
+            print_flush("DONE\nGenerating Q...", print_progress);
+            q = gen.random_prime(max_bits);
+            while p == q {
+                q = gen.random_prime(max_bits);
+            }
+            print_flush("DONE\n", print_progress);
+
+            print_flush("Calculating Public Key (N)...", print_progress);
+            n = &p * &q;
+            print_flush("DONE\n", print_progress);
+            totn = (&p - 1u8) * (&q - 1u8);
+
+            if use_default_exponent {
+                e = BigUint::from(65_537u32);
+                assert!(e < totn, "Tot(N) is smaller than `65_537u32`");
+            } else {
+                print_flush("Calculating Public Key (E)...", print_progress);
+                loop {
+                    e = gen.random_prime(max_bits);
+                    if e < totn {
+                        print_flush("DONE\n", print_progress);
+                        break;
+                    };
+                }
+            }
+
+            print_flush("Calculating Private Key (D)...", print_progress);
+            let (_, d_tmp, _) = euclides_extended(&e, &totn);
+            d = d_tmp.abs().to_biguint().unwrap();
+            d = (d % &totn + &totn) % &totn;
+
+            if (&e * &d % &totn) == One::one() {
+                print_flush("DONE\n", print_progress);
+                break;
+            }
+            print_flush(
+                "\nCould not find a valid Private Key...RETRYING\n",
+                print_progress,
+            );
+        }
+        print_flush("Key Pair successfully generated\n", print_progress);
+
+        let key_pair = KeyPair {
+            public_key: Key {
+                exponent: e.clone(),
+                modulus: n.clone(),
+                variant: KeyVariant::PublicKey,
+            },
+            private_key: Key {
+                exponent: d.clone(),
+                modulus: n.clone(),
+                variant: KeyVariant::PrivateKey,
+            },
+        };
+
+        if print_results {
+            println!("Max bits for N: {}", key_size);
+            println!("Max bits for P and Q: {}", max_bits);
+            println!("Attempts needed: {}", attempts);
+            println!("The values calculated were:");
+            println!("P = {}", p);
+            println!("Q = {}", q);
+            println!("N = {}", n);
+            println!("Tot(N) = {}", totn);
+            if !use_default_exponent {
+                println!("E (Non default) = {}", e);
+            }
+            println!("D = {}", d);
+        }
+
+        key_pair
     }
 
-    /// Validates and writes Public and Private key files to `key_out_path`.
-    /// # Panics
-    /// Panics if `key_pair` isn't valid.
-    pub fn write_key_files(key_out_path: &str, key_pair: &KeyPair) {
-        todo!()
-    }
-
+    #[allow(unused)]
     /// Returns `true` if `KeyPair` is valid.
     #[must_use]
     fn is_valid(&self) -> bool {
@@ -76,32 +164,20 @@ impl KeyPair {
     }
 }
 
-trait IsDefaultExponent {
-    fn is_default_exponent(&self) -> bool;
-}
-
-impl IsDefaultExponent for BigUint {
-    fn is_default_exponent(&self) -> bool {
-        *self == BigUint::from(Key::DEFAULT_EXPONENT)
-    }
-}
-
 impl Key {
-    const DEFAULT_EXPONENT: u32 = 65_537u32;
-    const PUBLIC_KEY_SUFFIX: &str = ".pub";
-    const APP_CONFIG_DIR: &str = crate_name!();
-    const DEFAULT_KEY_NAME: &str = "rrsa_key";
-    const BIGUINT_STR_RADIX: u32 = 16;
     const DEFAULT_KEY_SIZE: usize = 4096;
-
-    /// Returns the default filename for both Public and Private Key variants.
-    fn get_filename(&self) -> String {
-        if self.variant == KeyVariant::PublicKey {
-            Key::DEFAULT_KEY_NAME.to_string() + Key::PUBLIC_KEY_SUFFIX
-        } else {
-            Key::DEFAULT_KEY_NAME.to_string()
-        }
-    }
+    const DEFAULT_EXPONENT: u32 = 65_537u32;
+    const BIGUINT_STR_RADIX: u32 = 16;
+    const APP_CONFIG_DIR: &str = crate_name!();
+    const PUBLIC_KEY_FILE_SUFFIX: &str = ".pub";
+    const DEFAULT_KEY_NAME: &str = "rrsa_key";
+    const PUBLIC_KEY_NORMAL_HEADER: &str = "rrsa ";
+    const PUBLIC_KEY_NDEX_HEADER: &str = "rrsa-ndex ";
+    const PUBLIC_KEY_SPLIT_CHAR: char = ' ';
+    const PRIVATE_KEY_HEADER: &str = "-----BEGIN RSA-RUST PRIVATE KEY-----\n";
+    const PRIVATE_KEY_FOOTER: &str = "\n-----END RSA-RUST PRIVATE KEY-----\n";
+    const PRIVATE_KEY_SPLIT_CHAR: char = '\n';
+    const KEY_FILE_STR_RADIX_REGEX: &str = r"^[0-9a-f]+$";
 
     /// Writes Public or Private key file to output path.
     pub fn write_key_file(&self, maybe_path: Option<&Path>) {
@@ -111,24 +187,23 @@ impl Key {
             if path.is_file() {
                 final_path = path.to_path_buf();
             } else if path.is_dir() {
-                final_path = path.join(self.get_filename());
+                final_path = path.join(self.variant.get_filename());
             } else {
                 // THIS ASSUMES THE PATH IS FOR A DIRECTORY
                 create_dir_all(path).expect("Failed to create necessary parent directories!");
-                final_path = path.join(self.get_filename());
+                final_path = path.join(self.variant.get_filename());
             }
         } else if let Some(dirs) = BaseDirs::new() {
             let parent_dir = dirs.config_dir().join(Key::APP_CONFIG_DIR);
             create_dir_all(&parent_dir).expect("Failed to create necessary parent directories!");
-            final_path = parent_dir.join(self.get_filename());
+            final_path = parent_dir.join(self.variant.get_filename());
         } else {
             eprintln!("Failed to find user's config directory! Falling back to cwd...");
             final_path = PathBuf::from(".")
                 .join(Key::APP_CONFIG_DIR)
-                .join(self.get_filename());
+                .join(self.variant.get_filename());
         }
         println!("Key file saved to `{}`", final_path.to_string_lossy());
-
         dbg!(&final_path);
 
         let mut file = File::create(&final_path).unwrap_or_else(|_| {
@@ -138,15 +213,15 @@ impl Key {
             )
         });
 
-        let content: String = match self.variant {
+        let content = match self.variant {
             KeyVariant::PublicKey => {
                 let use_default_exponent = self.exponent.is_default_exponent();
                 if use_default_exponent {
-                    String::from("rsa-rust ")
+                    String::from(Key::PUBLIC_KEY_NORMAL_HEADER)
                         + &self.modulus.to_str_radix(Key::BIGUINT_STR_RADIX)
                         + "\n"
                 } else {
-                    String::from("rsa-rust-ndex ")
+                    String::from(Key::PUBLIC_KEY_NDEX_HEADER)
                         + &self.modulus.to_str_radix(Key::BIGUINT_STR_RADIX)
                         + " "
                         + &self.exponent.to_str_radix(Key::BIGUINT_STR_RADIX)
@@ -154,9 +229,11 @@ impl Key {
                 }
             }
             KeyVariant::PrivateKey => {
-                String::from("-----BEGIN RSA-RUST PRIVATE KEY-----\n")
+                String::from(Key::PRIVATE_KEY_HEADER)
+                    + &self.modulus.to_str_radix(Key::BIGUINT_STR_RADIX)
+                    + "\n"
                     + &self.exponent.to_str_radix(Key::BIGUINT_STR_RADIX)
-                    + "\n-----END RSA-RUST PRIVATE KEY-----\n"
+                    + Key::PRIVATE_KEY_FOOTER
             }
         };
 
@@ -165,7 +242,122 @@ impl Key {
     }
 
     /// Reads Public or Private key file from input path.
-    pub fn read_key_file(&self, maybe_path: Option<&Path>) {}
+    pub fn read_key_file(maybe_path: Option<&Path>, variant: KeyVariant) -> Result<Key, String> {
+        let final_path: PathBuf;
+
+        if let Some(path) = maybe_path {
+            if path.is_file() {
+                final_path = path.to_path_buf();
+            } else {
+                return Err(String::from("Input path is invalid"));
+            }
+        } else if let Some(dirs) = BaseDirs::new() {
+            final_path = dirs
+                .config_dir()
+                .join(Key::APP_CONFIG_DIR)
+                .join(variant.get_filename());
+        } else {
+            eprintln!("Failed to find user's config directory! Falling back to cwd...");
+            final_path = PathBuf::from(".")
+                .join(Key::APP_CONFIG_DIR)
+                .join(variant.get_filename());
+        }
+        println!("Key file read from `{}`", final_path.to_string_lossy());
+        dbg!(&final_path);
+
+        let file_buf = std::fs::read_to_string(final_path).map_err(|e| e.to_string())?;
+        match variant {
+            KeyVariant::PublicKey => {
+                let file_buf: Vec<&str> = file_buf.split(Key::PUBLIC_KEY_SPLIT_CHAR).collect();
+                if variant.is_valid_key_file(&file_buf) {
+                    Ok(Key {
+                        modulus: BigUint::from_str_radix(
+                            file_buf[1].trim(),
+                            Key::BIGUINT_STR_RADIX,
+                        )
+                        .map_err(|e| e.to_string())?,
+
+                        exponent: if file_buf[0] == Key::PUBLIC_KEY_NDEX_HEADER {
+                            BigUint::from_str_radix(file_buf[2].trim(), Key::BIGUINT_STR_RADIX)
+                                .map_err(|e| e.to_string())?
+                        } else {
+                            BigUint::from(Key::DEFAULT_EXPONENT)
+                        },
+
+                        variant,
+                    })
+                } else {
+                    Err(String::from("File is an invalid public key"))
+                }
+            }
+            KeyVariant::PrivateKey => {
+                let file_buf: Vec<&str> = file_buf.split(Key::PRIVATE_KEY_SPLIT_CHAR).collect();
+                if variant.is_valid_key_file(&file_buf) {
+                    Ok(Key {
+                        modulus: BigUint::from_str_radix(
+                            file_buf[1].trim(),
+                            Key::BIGUINT_STR_RADIX,
+                        )
+                        .map_err(|e| e.to_string())?,
+
+                        exponent: BigUint::from_str_radix(
+                            file_buf[2].trim(),
+                            Key::BIGUINT_STR_RADIX,
+                        )
+                        .map_err(|e| e.to_string())?,
+
+                        variant,
+                    })
+                } else {
+                    Err(String::from("File is an invalid private key"))
+                }
+            }
+        }
+    }
+}
+
+impl KeyVariant {
+    /// Returns the default filename for both Public and Private Key variants.
+    fn get_filename(&self) -> String {
+        if *self == KeyVariant::PublicKey {
+            Key::DEFAULT_KEY_NAME.to_string() + Key::PUBLIC_KEY_FILE_SUFFIX
+        } else {
+            Key::DEFAULT_KEY_NAME.to_string()
+        }
+    }
+
+    fn is_valid_key_file(&self, file_buf: &Vec<&str>) -> bool {
+        let reg = Regex::new(Key::KEY_FILE_STR_RADIX_REGEX).unwrap();
+
+        match self {
+            KeyVariant::PublicKey => {
+                file_buf.len() == 2
+                    && file_buf[0].trim() == Key::PUBLIC_KEY_NORMAL_HEADER
+                    && reg.is_match(file_buf[1].trim())
+                    || file_buf.len() == 3
+                        && file_buf[0].trim() == Key::PUBLIC_KEY_NDEX_HEADER
+                        && reg.is_match(file_buf[1].trim())
+                        && reg.is_match(file_buf[2].trim())
+            }
+            KeyVariant::PrivateKey => {
+                file_buf.len() == 5
+                    && file_buf[0].trim() == Key::PRIVATE_KEY_HEADER
+                    && file_buf[3].trim() == Key::PRIVATE_KEY_FOOTER
+                    && reg.is_match(file_buf[1].trim())
+                    && reg.is_match(file_buf[2].trim())
+            }
+        }
+    }
+}
+
+trait IsDefaultExponent {
+    fn is_default_exponent(&self) -> bool;
+}
+
+impl IsDefaultExponent for BigUint {
+    fn is_default_exponent(&self) -> bool {
+        *self == BigUint::from(Key::DEFAULT_EXPONENT)
+    }
 }
 
 fn print_flush(string: &str, print_progress: bool) {
