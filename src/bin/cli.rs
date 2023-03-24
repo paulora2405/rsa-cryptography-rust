@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use rrsa_common::{
     encryption::{decrypt_file, encrypt_file},
-    key_generator::KeyPair,
+    key::KeyPair,
 };
 
 fn main() {
@@ -15,23 +15,23 @@ fn main() {
         } => {
             let key_pair =
                 KeyPair::generate_keys(key_size, !use_ndex, print_results, print_progress);
-            KeyPair::write_key_files(&out_path, &key_pair);
+            // KeyPair::write_key_files(&out_path, &key_pair);
         }
         RsaCommands::Encrypt {
             file_path,
             out_path,
             key_path,
         } => {
-            let key = KeyPair::read_key_files(&key_path);
-            encrypt_file(&file_path, &out_path, &key.pub_key);
+            // let key = KeyPair::read_key_files(&key_path);
+            // encrypt_file(&file_path, &out_path, &key.pub_key);
         }
         RsaCommands::Decrypt {
             file_path,
             out_path,
             key_path,
         } => {
-            let key = KeyPair::read_key_files(&key_path);
-            decrypt_file(&file_path, &out_path, &key.priv_key);
+            // let key = KeyPair::read_key_files(&key_path);
+            // decrypt_file(&file_path, &out_path, &key.priv_key);
         }
     }
 }
@@ -49,10 +49,10 @@ enum RsaCommands {
     Keygen {
         /// Key size in bits (Min=32; Max=4096)
         #[arg(short, long)]
-        key_size: u16,
+        key_size: Option<u16>,
         /// Path to save key file (Ex: ./keys/key)
         #[arg(short, long)]
-        out_path: String,
+        out_path: Option<String>,
         /// Generates a key with non default exponent value (False by default)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         use_ndex: bool,
@@ -70,10 +70,10 @@ enum RsaCommands {
         file_path: String,
         /// Output file path
         #[arg(short, long)]
-        out_path: String,
+        out_path: Option<String>,
         /// Path to Public Key (ommit the `.pub`)
         #[arg(short, long)]
-        key_path: String,
+        key_path: Option<String>,
     },
     /// Decrypts an encrypted file using a Private Key
     Decrypt {
@@ -82,9 +82,9 @@ enum RsaCommands {
         file_path: String,
         /// Output file path
         #[arg(short, long)]
-        out_path: String,
+        out_path: Option<String>,
         /// Path to Private Key
         #[arg(short, long)]
-        key_path: String,
+        key_path: Option<String>,
     },
 }

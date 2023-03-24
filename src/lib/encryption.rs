@@ -1,4 +1,4 @@
-use crate::key_generator::Key;
+use crate::key::Key;
 use crate::math::mod_pow;
 use num_bigint::BigUint;
 use std::fs::{create_dir_all, File};
@@ -45,7 +45,7 @@ fn open_input_output(file_path: &str, out_path: &str) -> (File, File) {
 /// Encrypts a file chunk by chunk
 pub fn encrypt_file(file_path: &str, out_path: &str, key: &Key) {
     let (mut file_in, mut file_out) = open_input_output(file_path, out_path);
-    let (exponent, modulus) = (&key.d_e, &key.n);
+    let (exponent, modulus) = (&key.exponent, &key.modulus);
     let max_bytes_read = size_in_bytes(modulus) - ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
     let max_bytes_write = size_in_bytes(modulus);
     let mut source_bytes = vec![0u8; max_bytes_read];
@@ -71,7 +71,7 @@ pub fn encrypt_file(file_path: &str, out_path: &str, key: &Key) {
 /// decrypts a file chunk by chunk
 pub fn decrypt_file(file_path: &str, out_path: &str, key: &Key) {
     let (mut file_in, mut file_out) = open_input_output(file_path, out_path);
-    let (exponent, modulus) = (&key.d_e, &key.n);
+    let (exponent, modulus) = (&key.exponent, &key.modulus);
     let max_bytes = size_in_bytes(modulus);
     let mut source_bytes = vec![0u8; max_bytes];
     let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes);
@@ -94,15 +94,18 @@ pub fn decrypt_file(file_path: &str, out_path: &str, key: &Key) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::key_generator::KeyPair;
 
     #[test]
     fn test_encrypt_decrypt() {
         let plain_file = "messages/lorem.txt";
         let encrypted = "messages/encrypted.txt";
         let decrypted = "messages/decrypted.txt";
-        let keypair = KeyPair::read_key_files("keys/small_key");
-        encrypt_file(plain_file, encrypted, &keypair.pub_key);
-        decrypt_file(encrypted, decrypted, &keypair.priv_key);
+
+        let pub_path = Some(Path::new("keys/small_key.pub"));
+        let priv_path = Some(Path::new("keys/small_key"));
+        let pub_key = Key::read_key_file(pub_path, crate::key::KeyVariant::PublicKey).unwrap();
+        let priv_key = Key::read_key_file(priv_path, crate::key::KeyVariant::PrivateKey).unwrap();
+        encrypt_file(plain_file, encrypted, &pub_key);
+        decrypt_file(encrypted, decrypted, &priv_key);
     }
 }

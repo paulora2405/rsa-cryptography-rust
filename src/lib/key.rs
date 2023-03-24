@@ -1,8 +1,8 @@
 use crate::math::{euclides_extended, mod_pow, PrimeGenerator};
 use clap::crate_name;
-use directories::{BaseDirs, ProjectDirs, UserDirs};
+use directories::BaseDirs;
 use num_bigint::BigUint;
-use num_traits::{FromPrimitive, Num, One, Signed};
+use num_traits::{Num, One, Signed};
 use regex::Regex;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
@@ -36,21 +36,17 @@ impl KeyPair {
     /// Panics if `key_size` is not in (32, 4096) interval
     #[must_use]
     pub fn generate_keys(
-        key_size: u16,
+        maybe_key_size: Option<u16>,
         use_default_exponent: bool,
         print_results: bool,
         print_progress: bool,
     ) -> KeyPair {
+        let key_size = maybe_key_size.unwrap_or(Key::DEFAULT_KEY_SIZE);
         assert!((32..=4096).contains(&key_size), "Key size not supported!");
 
         let max_bits = key_size / 2;
         let mut attempts = 0u32;
-        let mut p: BigUint;
-        let mut q: BigUint;
-        let mut n: BigUint;
-        let mut totn: BigUint;
-        let mut e: BigUint;
-        let mut d: BigUint;
+        let (mut p, mut q, mut n, mut totn, mut e, mut d);
         let mut gen: PrimeGenerator = PrimeGenerator::new();
 
         // Step 1: Select two big prime numbers `P` and `Q`
@@ -70,15 +66,19 @@ impl KeyPair {
                 q = gen.random_prime(max_bits);
             }
             print_flush("DONE\n", print_progress);
-
             print_flush("Calculating Public Key (N)...", print_progress);
             n = &p * &q;
             print_flush("DONE\n", print_progress);
             totn = (&p - 1u8) * (&q - 1u8);
 
             if use_default_exponent {
-                e = BigUint::from(65_537u32);
-                assert!(e < totn, "Tot(N) is smaller than `65_537u32`");
+                print_flush("Using default exponent...", print_progress);
+                e = BigUint::from(Key::DEFAULT_EXPONENT);
+                assert!(
+                    e < totn,
+                    "Tot(N) is smaller than `{}`",
+                    Key::DEFAULT_EXPONENT
+                );
             } else {
                 print_flush("Calculating Public Key (E)...", print_progress);
                 loop {
@@ -137,6 +137,11 @@ impl KeyPair {
         key_pair
     }
 
+    pub fn write_key_files(keypair: &KeyPair, maybe_key_path: Option<&Path>) {
+        // differentiate if path already contains '.pub' extension (it should not)
+        todo!()
+    }
+
     #[allow(unused)]
     /// Returns `true` if `KeyPair` is valid.
     #[must_use]
@@ -165,7 +170,7 @@ impl KeyPair {
 }
 
 impl Key {
-    const DEFAULT_KEY_SIZE: usize = 4096;
+    const DEFAULT_KEY_SIZE: u16 = 4096;
     const DEFAULT_EXPONENT: u32 = 65_537u32;
     const BIGUINT_STR_RADIX: u32 = 16;
     const APP_CONFIG_DIR: &str = crate_name!();
@@ -355,6 +360,7 @@ trait IsDefaultExponent {
 }
 
 impl IsDefaultExponent for BigUint {
+    #[must_use]
     fn is_default_exponent(&self) -> bool {
         *self == BigUint::from(Key::DEFAULT_EXPONENT)
     }
@@ -372,16 +378,107 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_write_key_file() {
-        let mut key = Key {
-            exponent: BigUint::from(1u32),
-            modulus: BigUint::from(1u32),
+    fn test_key_validation() {
+        let key_pair = KeyPair {
+            public_key: Key {
+                exponent: BigUint::from(65_537u32), // default value isn't present in key file
+                modulus: BigUint::from(2523461377u64), // 0x9668f701
+                variant: KeyVariant::PublicKey,
+            },
+            private_key: Key {
+                exponent: BigUint::from(343637873u32), // 0x147b7f71
+                modulus: BigUint::from(2523461377u64), // 0x9668f701
+                variant: KeyVariant::PrivateKey,
+            },
+        };
+        assert!(key_pair.is_valid());
+        let key_pair = KeyPair {
+            public_key: Key {
+                exponent: BigUint::from(23447u64),    // 0x5b97
+                modulus: BigUint::from(298224757u64), // 0x11c68c75
+                variant: KeyVariant::PublicKey,
+            },
+            private_key: Key {
+                exponent: BigUint::from(58335719u64), // 0x37a21e7
+                modulus: BigUint::from(298224757u64), // 0x11c68c75
+                variant: KeyVariant::PrivateKey,
+            },
+        };
+        assert!(key_pair.is_valid());
+    }
+
+    #[test]
+    fn test_key_import_dex() {
+        let public_key = Key {
+            exponent: BigUint::from(65_537u32), // default value isn't present in key file
+            modulus: BigUint::from(2523461377u64), // 0x9668f701
             variant: KeyVariant::PublicKey,
         };
-        let path = Some(Path::new("teste"));
+        let private_key = Key {
+            exponent: BigUint::from(343637873u32), // 0x147b7f71
+            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            variant: KeyVariant::PrivateKey,
+        };
+
+        let pub_path = Some(Path::new("keys/tests/dex_key.pub"));
+        public_key.write_key_file(pub_path);
+        let read_pub_key = Key::read_key_file(pub_path, KeyVariant::PublicKey).unwrap();
+        assert_eq!(read_pub_key, public_key);
+        let priv_path = Some(Path::new("keys/tests/dex_key"));
+        private_key.write_key_file(priv_path);
+        let read_priv_key = Key::read_key_file(priv_path, KeyVariant::PrivateKey).unwrap();
+        assert_eq!(read_priv_key, private_key);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_key() {
+        let res = Key::read_key_file(
+            Some(Path::new("keys/tests/invalid_key.pub")),
+            KeyVariant::PublicKey,
+        );
+        assert!(res.is_err());
+        let res = Key::read_key_file(
+            Some(Path::new("keys/tests/invalid_key")),
+            KeyVariant::PrivateKey,
+        );
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_key_import_ndex() {
+        let public_key = Key {
+            exponent: BigUint::from(23447u64),    // 0x5b97
+            modulus: BigUint::from(298224757u64), // 0x11c68c75
+            variant: KeyVariant::PublicKey,
+        };
+        let private_key = Key {
+            exponent: BigUint::from(58335719u64), // 0x37a21e7
+            modulus: BigUint::from(298224757u64), // 0x11c68c75
+            variant: KeyVariant::PrivateKey,
+        };
+
+        let pub_path = Some(Path::new("keys/tests/ndex_key.pub"));
+        public_key.write_key_file(pub_path);
+        let read_pub_key = Key::read_key_file(pub_path, KeyVariant::PublicKey).unwrap();
+        assert_eq!(read_pub_key, public_key);
+        let priv_path = Some(Path::new("keys/tests/ndex_key"));
+        private_key.write_key_file(priv_path);
+        let read_priv_key = Key::read_key_file(priv_path, KeyVariant::PrivateKey).unwrap();
+        assert_eq!(read_priv_key, private_key);
+    }
+
+    #[test]
+    fn test_write_key_file() {
+        // let mut key = Key {
+        //     exponent: BigUint::from(1u32),
+        //     modulus: BigUint::from(1u32),
+        //     variant: KeyVariant::PublicKey,
+        // };
+        // let path = Some(Path::new("teste"));
         // key.write_key_file(path);
-        key.variant = KeyVariant::PrivateKey;
-        // key.write_key_file(path);
-        key.write_key_file(None);
+        // key.variant = KeyVariant::PrivateKey;
+        // // key.write_key_file(path);
+        // key.write_key_file(None);
     }
 }
