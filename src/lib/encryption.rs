@@ -38,20 +38,20 @@ impl Key {
                 if out_path.is_file() {
                     match self.variant {
                         crate::key::KeyVariant::PublicKey => {
-                            out_path.join(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION)
+                            out_path.with_extension(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION)
                         }
                         crate::key::KeyVariant::PrivateKey => {
-                            out_path.join(Key::DEFAULT_DECRYPTED_FILE_EXTENSION)
+                            out_path.with_extension(Key::DEFAULT_DECRYPTED_FILE_EXTENSION)
                         }
                     }
                 } else if out_path.is_dir() {
                     match self.variant {
                         crate::key::KeyVariant::PublicKey => out_path
                             .join(Key::DEFAULT_ENCRYPTED_FILE_NAME)
-                            .join(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION),
+                            .with_extension(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION),
                         crate::key::KeyVariant::PrivateKey => out_path
                             .join(Key::DEFAULT_DECRYPTED_FILE_NAME)
-                            .join(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
+                            .with_extension(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
                     }
                 } else {
                     create_dir_all(&out_path).expect("Failed to create parents directories");
@@ -61,20 +61,23 @@ impl Key {
                             .join(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION),
                         crate::key::KeyVariant::PrivateKey => out_path
                             .join(Key::DEFAULT_DECRYPTED_FILE_NAME)
-                            .join(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
+                            .with_extension(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
                     }
                 }
             } else {
                 match self.variant {
                     crate::key::KeyVariant::PublicKey => PathBuf::from(".")
                         .join(Key::DEFAULT_ENCRYPTED_FILE_NAME)
-                        .join(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION),
+                        .with_extension(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION),
                     crate::key::KeyVariant::PrivateKey => PathBuf::from(".")
                         .join(Key::DEFAULT_DECRYPTED_FILE_NAME)
-                        .join(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
+                        .with_extension(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
                 }
             }
         };
+
+        println!("Reading input file from `{}`", file_path.to_string_lossy());
+        println!("Writting output file to `{}`", out_path.to_string_lossy());
 
         let file_in = File::open(file_path).expect("Error opening input file");
         let file_out = File::create(out_path).expect("Error opening output file");
@@ -83,11 +86,12 @@ impl Key {
     }
 
     /// Encrypts a file chunk by chunk
+    /// TODO: try to use SmallVec crate
     pub fn encrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let (exponent, modulus) = (&self.exponent, &self.modulus);
         let max_bytes_read = modulus.size_in_bytes() - Key::ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
-        let max_bytes_write = modulus.size_in_bytes();
+        let max_bytes_write = modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
         let mut source_bytes = vec![0u8; max_bytes_read];
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes_read);
         let mut bytes_amount_read = max_bytes_read;
@@ -112,7 +116,7 @@ impl Key {
     pub fn decrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let (exponent, modulus) = (&self.exponent, &self.modulus);
-        let max_bytes = modulus.size_in_bytes();
+        let max_bytes = modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
         let mut source_bytes = vec![0u8; max_bytes];
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes);
         let mut bytes_amount_read = max_bytes;
@@ -143,8 +147,8 @@ mod tests {
         let encrypted = Some(PathBuf::from("messages/"));
         let decrypted = Some(PathBuf::from("messages/"));
 
-        let pub_path = Some(PathBuf::from("keys/small_key.pub"));
-        let priv_path = Some(PathBuf::from("keys/small_key"));
+        let pub_path = Some(PathBuf::from("keys"));
+        let priv_path = Some(PathBuf::from("keys"));
         let pub_key = Key::read_key_file(pub_path, crate::key::KeyVariant::PublicKey).unwrap();
         let priv_key = Key::read_key_file(priv_path, crate::key::KeyVariant::PrivateKey).unwrap();
         pub_key.encrypt_file(plain_file, encrypted.clone());

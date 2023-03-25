@@ -72,7 +72,7 @@ impl KeyPair {
             totn = (&p - 1u8) * (&q - 1u8);
 
             if use_default_exponent {
-                print_flush("Using default exponent...", print_progress);
+                print_flush("Using default exponent...\n", print_progress);
                 e = BigUint::from(Key::DEFAULT_EXPONENT);
                 assert!(
                     e < totn,
@@ -238,7 +238,7 @@ impl Key {
                 .join(Key::APP_CONFIG_DIR)
                 .join(self.variant.get_filename());
         }
-        println!("Key file saved to `{}`", final_path.to_string_lossy());
+        println!("Saving Key file to `{}`", final_path.to_string_lossy());
 
         let mut file = File::create(&final_path).unwrap_or_else(|_| {
             panic!(
@@ -282,6 +282,8 @@ impl Key {
         if let Some(path) = maybe_path {
             if path.is_file() {
                 final_path = path;
+            } else if path.is_dir() {
+                final_path = path.join(variant.get_filename());
             } else {
                 return Err(String::from("Input path is invalid"));
             }
@@ -296,7 +298,7 @@ impl Key {
                 .join(Key::APP_CONFIG_DIR)
                 .join(variant.get_filename());
         }
-        println!("Key file read from `{}`", final_path.to_string_lossy());
+        println!("Reading Key file from `{}`", final_path.to_string_lossy());
 
         let file_buf = std::fs::read_to_string(final_path).map_err(|e| e.to_string())?;
         match variant {
@@ -366,17 +368,17 @@ impl KeyVariant {
         match self {
             KeyVariant::PublicKey => {
                 file_buf.len() == 2
-                    && file_buf[0].trim() == Key::PUBLIC_KEY_NORMAL_HEADER
+                    && file_buf[0].trim() == Key::PUBLIC_KEY_NORMAL_HEADER.trim()
                     && reg.is_match(file_buf[1].trim())
                     || file_buf.len() == 3
-                        && file_buf[0].trim() == Key::PUBLIC_KEY_NDEX_HEADER
+                        && file_buf[0].trim() == Key::PUBLIC_KEY_NDEX_HEADER.trim()
                         && reg.is_match(file_buf[1].trim())
                         && reg.is_match(file_buf[2].trim())
             }
             KeyVariant::PrivateKey => {
                 file_buf.len() == 5
-                    && file_buf[0].trim() == Key::PRIVATE_KEY_HEADER
-                    && file_buf[3].trim() == Key::PRIVATE_KEY_FOOTER
+                    && file_buf[0].trim() == Key::PRIVATE_KEY_HEADER.trim()
+                    && file_buf[3].trim() == Key::PRIVATE_KEY_FOOTER.trim()
                     && reg.is_match(file_buf[1].trim())
                     && reg.is_match(file_buf[2].trim())
             }

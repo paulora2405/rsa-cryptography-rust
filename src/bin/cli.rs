@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use rrsa_common::key::{Key, KeyPair, KeyVariant};
 
-fn main() {
+fn main() -> Result<(), String> {
     match RsaCli::parse().sub_command {
         RsaCommands::Keygen {
             key_size: maybe_key_size,
@@ -14,16 +14,14 @@ fn main() {
         } => {
             let key_pair =
                 KeyPair::generate_keys(maybe_key_size, !use_ndex, print_results, print_progress);
-            key_pair
-                .write_key_files(out_path)
-                .unwrap_or_else(|e| panic!("Failed to write key pair, error: '{e}'"));
+            key_pair.write_key_files(out_path)?;
         }
         RsaCommands::Encrypt {
             file_path,
             out_path: maybe_out_path,
             key_path: maybe_key_path,
         } => {
-            let key = Key::read_key_file(maybe_key_path, KeyVariant::PublicKey).unwrap(); // TODO:
+            let key = Key::read_key_file(maybe_key_path, KeyVariant::PublicKey)?;
             key.encrypt_file(file_path, maybe_out_path);
         }
         RsaCommands::Decrypt {
@@ -31,10 +29,11 @@ fn main() {
             out_path: maybe_out_path,
             key_path: maybe_key_path,
         } => {
-            let key = Key::read_key_file(maybe_key_path, KeyVariant::PrivateKey).unwrap(); // TODO:
+            let key = Key::read_key_file(maybe_key_path, KeyVariant::PrivateKey)?;
             key.decrypt_file(file_path, maybe_out_path);
         }
-    }
+    };
+    Ok(())
 }
 
 #[derive(Parser)]
