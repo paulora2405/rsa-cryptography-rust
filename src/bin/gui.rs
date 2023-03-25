@@ -2,29 +2,29 @@
 
 use eframe::egui;
 
-// use `directories` crate to default keys input/output location
+// TODO: use `directories` crate to default keys input/output location
 // make output file arg for encryption and decryption optional, defaulting to cwd and with default names
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
-        initial_window_size: Some(egui::vec2(320.0, 240.0)),
+        initial_window_size: Some(egui::vec2(520.0, 240.0)),
         ..Default::default()
     };
     eframe::run_native(
-        "Native file dialogs and drag-and-drop files",
+        "RRSA - Key Generation, Encryption and Decryption",
         options,
-        Box::new(|_cc| Box::<MyApp>::default()),
+        Box::new(|_cc| Box::<RrsaApp>::default()),
     )
 }
 
 #[derive(Default)]
-struct MyApp {
+struct RrsaApp {
     dropped_files: Vec<egui::DroppedFile>,
     picked_path: Option<String>,
 }
 
-impl eframe::App for MyApp {
+impl eframe::App for RrsaApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label("Drag-and-drop files onto the window!");

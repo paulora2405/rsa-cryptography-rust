@@ -6,7 +6,7 @@ use num_traits::{Num, One, Signed};
 use regex::Regex;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum KeyVariant {
@@ -119,6 +119,8 @@ impl KeyPair {
             },
         };
 
+        assert!(key_pair.is_valid());
+
         if print_results {
             println!("Max bits for N: {}", key_size);
             println!("Max bits for P and Q: {}", max_bits);
@@ -137,9 +139,34 @@ impl KeyPair {
         key_pair
     }
 
-    pub fn write_key_files(keypair: &KeyPair, maybe_key_path: Option<&Path>) {
+    pub fn write_key_files(&self, maybe_file_path: Option<PathBuf>) -> Result<(), String> {
         // differentiate if path already contains '.pub' extension (it should not)
-        todo!()
+        if !self.is_valid() {
+            return Err(String::from("Tried writting an Invalid Key pair"));
+        } else if let Some(path) = &maybe_file_path {
+            if path.extension().is_some() {
+                todo!();
+            }
+        }
+
+        let KeyPair {
+            public_key,
+            private_key,
+        } = self;
+
+        match maybe_file_path {
+            Some(path) => {
+                // let pub_path = path.join(Key::PUBLIC_KEY_FILE_SUFFIX);
+                public_key.write_key_file(Some(path.clone()));
+                private_key.write_key_file(Some(path));
+            }
+            None => {
+                public_key.write_key_file(None);
+                private_key.write_key_file(None);
+            }
+        }
+
+        Ok(())
     }
 
     #[allow(unused)]
@@ -185,17 +212,20 @@ impl Key {
     const KEY_FILE_STR_RADIX_REGEX: &str = r"^[0-9a-f]+$";
 
     /// Writes Public or Private key file to output path.
-    pub fn write_key_file(&self, maybe_path: Option<&Path>) {
+    pub fn write_key_file(&self, maybe_path: Option<PathBuf>) {
         let final_path: PathBuf;
 
         if let Some(path) = maybe_path {
             if path.is_file() {
-                final_path = path.to_path_buf();
+                final_path = path;
             } else if path.is_dir() {
                 final_path = path.join(self.variant.get_filename());
             } else {
+                // TODO: this should assume a path is for a file name, not dir name
+                //       but also differentiate is last component of path contains extension .pub, so that there is no conflit
+                // todo!();
                 // THIS ASSUMES THE PATH IS FOR A DIRECTORY
-                create_dir_all(path).expect("Failed to create necessary parent directories!");
+                create_dir_all(&path).expect("Failed to create necessary parent directories!");
                 final_path = path.join(self.variant.get_filename());
             }
         } else if let Some(dirs) = BaseDirs::new() {
@@ -209,7 +239,6 @@ impl Key {
                 .join(self.variant.get_filename());
         }
         println!("Key file saved to `{}`", final_path.to_string_lossy());
-        dbg!(&final_path);
 
         let mut file = File::create(&final_path).unwrap_or_else(|_| {
             panic!(
@@ -247,12 +276,12 @@ impl Key {
     }
 
     /// Reads Public or Private key file from input path.
-    pub fn read_key_file(maybe_path: Option<&Path>, variant: KeyVariant) -> Result<Key, String> {
+    pub fn read_key_file(maybe_path: Option<PathBuf>, variant: KeyVariant) -> Result<Key, String> {
         let final_path: PathBuf;
 
         if let Some(path) = maybe_path {
             if path.is_file() {
-                final_path = path.to_path_buf();
+                final_path = path;
             } else {
                 return Err(String::from("Input path is invalid"));
             }
@@ -268,7 +297,6 @@ impl Key {
                 .join(variant.get_filename());
         }
         println!("Key file read from `{}`", final_path.to_string_lossy());
-        dbg!(&final_path);
 
         let file_buf = std::fs::read_to_string(final_path).map_err(|e| e.to_string())?;
         match variant {
@@ -331,6 +359,7 @@ impl KeyVariant {
         }
     }
 
+    /// Validates a if a Key file is formatted correctly, but does not validate the key itself.
     fn is_valid_key_file(&self, file_buf: &Vec<&str>) -> bool {
         let reg = Regex::new(Key::KEY_FILE_STR_RADIX_REGEX).unwrap();
 
@@ -420,12 +449,12 @@ mod tests {
             variant: KeyVariant::PrivateKey,
         };
 
-        let pub_path = Some(Path::new("keys/tests/dex_key.pub"));
-        public_key.write_key_file(pub_path);
+        let pub_path = Some(PathBuf::from("keys/tests/dex_key.pub"));
+        public_key.write_key_file(pub_path.clone());
         let read_pub_key = Key::read_key_file(pub_path, KeyVariant::PublicKey).unwrap();
         assert_eq!(read_pub_key, public_key);
-        let priv_path = Some(Path::new("keys/tests/dex_key"));
-        private_key.write_key_file(priv_path);
+        let priv_path = Some(PathBuf::from("keys/tests/dex_key"));
+        private_key.write_key_file(priv_path.clone());
         let read_priv_key = Key::read_key_file(priv_path, KeyVariant::PrivateKey).unwrap();
         assert_eq!(read_priv_key, private_key);
     }
@@ -434,12 +463,12 @@ mod tests {
     #[should_panic]
     fn test_invalid_key() {
         let res = Key::read_key_file(
-            Some(Path::new("keys/tests/invalid_key.pub")),
+            Some(PathBuf::from("keys/tests/invalid_key.pub")),
             KeyVariant::PublicKey,
         );
         assert!(res.is_err());
         let res = Key::read_key_file(
-            Some(Path::new("keys/tests/invalid_key")),
+            Some(PathBuf::from("keys/tests/invalid_key")),
             KeyVariant::PrivateKey,
         );
         assert!(res.is_err());
@@ -458,12 +487,12 @@ mod tests {
             variant: KeyVariant::PrivateKey,
         };
 
-        let pub_path = Some(Path::new("keys/tests/ndex_key.pub"));
-        public_key.write_key_file(pub_path);
+        let pub_path = Some(PathBuf::from("keys/tests/ndex_key.pub"));
+        public_key.write_key_file(pub_path.clone());
         let read_pub_key = Key::read_key_file(pub_path, KeyVariant::PublicKey).unwrap();
         assert_eq!(read_pub_key, public_key);
-        let priv_path = Some(Path::new("keys/tests/ndex_key"));
-        private_key.write_key_file(priv_path);
+        let priv_path = Some(PathBuf::from("keys/tests/ndex_key"));
+        private_key.write_key_file(priv_path.clone());
         let read_priv_key = Key::read_key_file(priv_path, KeyVariant::PrivateKey).unwrap();
         assert_eq!(read_priv_key, private_key);
     }

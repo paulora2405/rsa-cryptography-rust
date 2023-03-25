@@ -1,37 +1,38 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
-use rrsa_common::{
-    encryption::{decrypt_file, encrypt_file},
-    key::KeyPair,
-};
+use rrsa_common::key::{Key, KeyPair, KeyVariant};
 
 fn main() {
     match RsaCli::parse().sub_command {
         RsaCommands::Keygen {
-            key_size,
+            key_size: maybe_key_size,
             out_path,
             use_ndex,
             print_results,
             print_progress,
         } => {
             let key_pair =
-                KeyPair::generate_keys(key_size, !use_ndex, print_results, print_progress);
-            // KeyPair::write_key_files(&out_path, &key_pair);
+                KeyPair::generate_keys(maybe_key_size, !use_ndex, print_results, print_progress);
+            key_pair
+                .write_key_files(out_path)
+                .unwrap_or_else(|e| panic!("Failed to write key pair, error: '{e}'"));
         }
         RsaCommands::Encrypt {
             file_path,
-            out_path,
-            key_path,
+            out_path: maybe_out_path,
+            key_path: maybe_key_path,
         } => {
-            // let key = KeyPair::read_key_files(&key_path);
-            // encrypt_file(&file_path, &out_path, &key.pub_key);
+            let key = Key::read_key_file(maybe_key_path, KeyVariant::PublicKey).unwrap(); // TODO:
+            key.encrypt_file(file_path, maybe_out_path);
         }
         RsaCommands::Decrypt {
             file_path,
-            out_path,
-            key_path,
+            out_path: maybe_out_path,
+            key_path: maybe_key_path,
         } => {
-            // let key = KeyPair::read_key_files(&key_path);
-            // decrypt_file(&file_path, &out_path, &key.priv_key);
+            let key = Key::read_key_file(maybe_key_path, KeyVariant::PrivateKey).unwrap(); // TODO:
+            key.decrypt_file(file_path, maybe_out_path);
         }
     }
 }
@@ -47,12 +48,12 @@ struct RsaCli {
 enum RsaCommands {
     /// Generates a Public and a Private key, and stores then in output file
     Keygen {
-        /// Key size in bits (Min=32; Max=4096)
+        /// Key size in bits, defaults to 4096 (32..=4096)
         #[arg(short, long)]
         key_size: Option<u16>,
         /// Path to save key file (Ex: ./keys/key)
         #[arg(short, long)]
-        out_path: Option<String>,
+        out_path: Option<PathBuf>,
         /// Generates a key with non default exponent value (False by default)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         use_ndex: bool,
@@ -67,24 +68,24 @@ enum RsaCommands {
     Encrypt {
         /// Input file path.
         #[arg(short, long)]
-        file_path: String,
+        file_path: PathBuf,
         /// Output file path
         #[arg(short, long)]
-        out_path: Option<String>,
-        /// Path to Public Key (ommit the `.pub`)
+        out_path: Option<PathBuf>,
+        /// Path to Public Key
         #[arg(short, long)]
-        key_path: Option<String>,
+        key_path: Option<PathBuf>,
     },
     /// Decrypts an encrypted file using a Private Key
     Decrypt {
         /// Input file path.
         #[arg(short, long)]
-        file_path: String,
+        file_path: PathBuf,
         /// Output file path
         #[arg(short, long)]
-        out_path: Option<String>,
+        out_path: Option<PathBuf>,
         /// Path to Private Key
         #[arg(short, long)]
-        key_path: Option<String>,
+        key_path: Option<PathBuf>,
     },
 }
