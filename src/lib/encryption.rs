@@ -1,15 +1,20 @@
 use crate::key::Key;
 use crate::math::mod_pow;
 use num_bigint::BigUint;
+use num_traits::ToPrimitive;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
-/// Returns the number of bytes needed to store all the bits of N-1
-fn size_in_bytes(n: &BigUint) -> usize {
-    (n.bits() / 8)
-        .try_into()
-        .expect("Couldn't cast nb_bytes from u64 to usize")
+trait SizeInBytes {
+    fn size_in_bytes(&self) -> usize;
+}
+
+impl SizeInBytes for BigUint {
+    /// Returns the number of bytes needed to store all the bits of N-1
+    fn size_in_bytes(&self) -> usize {
+        (self.bits() / 8).to_usize().unwrap_or(0usize)
+    }
 }
 
 impl Key {
@@ -81,8 +86,8 @@ impl Key {
     pub fn encrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let (exponent, modulus) = (&self.exponent, &self.modulus);
-        let max_bytes_read = size_in_bytes(modulus) - Key::ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
-        let max_bytes_write = size_in_bytes(modulus);
+        let max_bytes_read = modulus.size_in_bytes() - Key::ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
+        let max_bytes_write = modulus.size_in_bytes();
         let mut source_bytes = vec![0u8; max_bytes_read];
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes_read);
         let mut bytes_amount_read = max_bytes_read;
@@ -107,7 +112,7 @@ impl Key {
     pub fn decrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let (exponent, modulus) = (&self.exponent, &self.modulus);
-        let max_bytes = size_in_bytes(modulus);
+        let max_bytes = modulus.size_in_bytes();
         let mut source_bytes = vec![0u8; max_bytes];
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes);
         let mut bytes_amount_read = max_bytes;
