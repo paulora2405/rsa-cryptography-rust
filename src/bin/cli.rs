@@ -47,10 +47,10 @@ struct RsaCli {
 enum RsaCommands {
     /// Generates a Public and a Private key, and stores then in output file
     Keygen {
-        /// Key size in bits, defaults to 4096 (32..=4096)
+        /// Optional Key size in bits, defaults to 4096 (32..=4096)
         #[arg(short, long)]
         key_size: Option<u16>,
-        /// Path to save key file (Ex: ./keys/key)
+        /// Optional path to save key file (Ex: ./keys/key or ./keys/)
         #[arg(short, long)]
         out_path: Option<PathBuf>,
         /// Generates a key with non default exponent value (False by default)
