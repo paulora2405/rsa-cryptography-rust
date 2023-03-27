@@ -1,5 +1,4 @@
 use crate::key::Key;
-use crate::math::mod_pow;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use std::fs::{create_dir_all, File};
@@ -103,7 +102,7 @@ impl Key {
                 break;
             }
             let message = BigUint::from_bytes_le(&source_bytes);
-            let encrypted = mod_pow(&message, exponent, modulus);
+            let encrypted = message.modpow(exponent, modulus);
             destiny_bytes.clear();
             let _ = destiny_bytes.write(&encrypted.to_bytes_le()).unwrap();
             let size_diff = (max_bytes_write) - destiny_bytes.len();
@@ -128,7 +127,7 @@ impl Key {
                 break;
             }
             let encrypted = BigUint::from_bytes_le(&source_bytes);
-            let message = mod_pow(&encrypted, exponent, modulus);
+            let message = encrypted.modpow(exponent, modulus);
             destiny_bytes.clear();
             let _ = destiny_bytes.write(&message.to_bytes_le()).unwrap();
             let _bytes_amount_written = file_out.write(&destiny_bytes).unwrap();
