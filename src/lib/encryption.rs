@@ -30,7 +30,7 @@ impl Key {
                 file_path
             } else {
                 // TODO: handle this case better, maybe return a Result<>?
-                panic!("File does not exist");
+                panic!("File '{}' does not exist", file_path.to_string_lossy());
             }
         };
         let out_path = {
@@ -86,7 +86,7 @@ impl Key {
     }
 
     /// Encrypts a file chunk by chunk
-    /// TODO: try to use SmallVec crate
+    /// TODO: try to use ArrayVec crate
     pub fn encrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let (exponent, modulus) = (&self.exponent, &self.modulus);
@@ -151,7 +151,8 @@ mod tests {
         let priv_path = Some(PathBuf::from("keys"));
         let pub_key = Key::read_key_file(pub_path, crate::key::KeyVariant::PublicKey).unwrap();
         let priv_key = Key::read_key_file(priv_path, crate::key::KeyVariant::PrivateKey).unwrap();
-        pub_key.encrypt_file(plain_file, encrypted.clone());
+        pub_key.encrypt_file(plain_file, encrypted);
+        let encrypted = Some(PathBuf::from("messages/encrypted.cypher"));
         priv_key.decrypt_file(encrypted.unwrap(), decrypted);
     }
 }
