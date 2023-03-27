@@ -24,6 +24,7 @@ clap_complete = "4.1.4"
 dbg_hex = "0.1.1"
 directories = "5.0.0"
 eframe = "0.21.3"
+indicatif = "0.17.3"
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
 rand = "0.8.5"
