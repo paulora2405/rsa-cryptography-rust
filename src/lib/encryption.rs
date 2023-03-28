@@ -5,6 +5,7 @@ use num_traits::ToPrimitive;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::time::Duration;
 
 trait SizeInBytes {
     fn size_in_bytes(&self) -> usize;
@@ -86,24 +87,21 @@ impl Key {
     }
 
     /// Encrypts a file chunk by chunk
-    /// TODO: try to use ArrayVec crate
     pub fn encrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
-        let (exponent, modulus) = (&self.exponent, &self.modulus);
-        let max_bytes_read = modulus.size_in_bytes() - Key::ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
-        let max_bytes_write = modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
+        let max_bytes_read = self.modulus.size_in_bytes() - Key::ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
+        let max_bytes_write = self.modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
         let mut source_bytes = vec![0u8; max_bytes_read];
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes_read);
         let mut bytes_amount_read = max_bytes_read;
-
-        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len()).with_style(
-            ProgressStyle::with_template(
-                "Encrypting {spinner:.blue} [{wide_bar:.cyan/red}] {bytes}/{total_bytes}",
+        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len())
+            .with_style(
+                ProgressStyle::with_template("{msg} {bytes}/{total_bytes} {spinner:.red} ")
+                    .unwrap()
+                    .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ "),
             )
-            .unwrap()
-            .progress_chars("#>-"),
-        );
-        pb.tick();
+            .with_message("Encrypting");
+        pb.enable_steady_tick(Duration::from_millis(100));
 
         while bytes_amount_read == max_bytes_read {
             source_bytes.fill(0u8);
@@ -112,36 +110,33 @@ impl Key {
                 break;
             }
             let message = BigUint::from_bytes_le(&source_bytes);
-            let encrypted = message.modpow(exponent, modulus);
+            let encrypted = message.modpow(&self.exponent, &self.modulus);
             destiny_bytes.clear();
             let _ = destiny_bytes.write(&encrypted.to_bytes_le()).unwrap();
             let size_diff = (max_bytes_write) - destiny_bytes.len();
             destiny_bytes.append(&mut vec![0u8; size_diff]);
             let _bytes_amount_written = file_out.write(&destiny_bytes).unwrap();
-
             pb.inc(bytes_amount_read as u64);
         }
-
-        pb.finish_with_message("Done!");
+        pb.finish_with_message("Successfully encrypted");
     }
 
     /// decrypts a file chunk by chunk
     pub fn decrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
-        let (exponent, modulus) = (&self.exponent, &self.modulus);
-        let max_bytes = modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
+        let max_bytes = self.modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
         let mut source_bytes = vec![0u8; max_bytes];
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes);
         let mut bytes_amount_read = max_bytes;
 
-        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len()).with_style(
-            ProgressStyle::with_template(
-                "Decrypting {spinner:.blue} [{wide_bar:.cyan/red}] {bytes}/{total_bytes}",
+        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len())
+            .with_style(
+                ProgressStyle::with_template("{msg} {bytes}/{total_bytes} {spinner:.red} ")
+                    .unwrap()
+                    .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ "),
             )
-            .unwrap()
-            .progress_chars("#>-"),
-        );
-        pb.tick();
+            .with_message("Decrypting");
+        pb.enable_steady_tick(Duration::from_millis(100));
 
         while bytes_amount_read == max_bytes {
             source_bytes.fill(0u8);
@@ -150,15 +145,13 @@ impl Key {
                 break;
             }
             let encrypted = BigUint::from_bytes_le(&source_bytes);
-            let message = encrypted.modpow(exponent, modulus);
+            let message = encrypted.modpow(&self.exponent, &self.modulus);
             destiny_bytes.clear();
             let _ = destiny_bytes.write(&message.to_bytes_le()).unwrap();
             let _bytes_amount_written = file_out.write(&destiny_bytes).unwrap();
-
             pb.inc(bytes_amount_read as u64);
         }
-
-        pb.finish_with_message("Done!");
+        pb.finish_with_message("Successfully decrypted");
     }
 }
 
