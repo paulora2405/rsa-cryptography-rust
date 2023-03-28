@@ -47,19 +47,19 @@ struct RsaCli {
 enum RsaCommands {
     /// Generates a Public and a Private key, and stores then in output file
     Keygen {
-        /// Optional Key size in bits, defaults to 4096 (32..=4096)
+        /// [OPTIONAL] Key size in bits (defaults to 4096, must be in (32..=4096))
         #[arg(short, long)]
         key_size: Option<u16>,
-        /// Optional path to save key file (Ex: ./keys/key or ./keys/)
+        /// [OPTIONAL] Path to save key file (Ex: ./keys/key or ./keys/, defaults to `~/.config/rrsa/`)
         #[arg(short, long)]
         out_path: Option<PathBuf>,
-        /// Generates a key with non default exponent value (False by default)
+        /// [OPTIONAL] Generates a key with non default exponent value (False if absent)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         use_ndex: bool,
-        /// Prints the key generation internal results (False by default)
+        /// [OPTIONAL] Prints the key generation internal results (False if absent)
         #[arg(short = 'r', long, action = clap::ArgAction::SetTrue)]
         print_results: bool,
-        /// Prints the progress of the key generation (False by default)
+        /// [OPTIONAL] Prints the progress of the key generation (False if absent)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         print_progress: bool,
     },
@@ -68,10 +68,10 @@ enum RsaCommands {
         /// Input file path.
         #[arg(short, long)]
         file_path: PathBuf,
-        /// Output file path
+        /// [OPTIONAL] Output file path (Defaults to cwd)
         #[arg(short, long)]
         out_path: Option<PathBuf>,
-        /// Path to Public Key
+        /// [OPTIONAL] Path to Public Key (Defaults to `~/.config/rrsa/`)
         #[arg(short, long)]
         key_path: Option<PathBuf>,
     },
@@ -80,10 +80,10 @@ enum RsaCommands {
         /// Input file path.
         #[arg(short, long)]
         file_path: PathBuf,
-        /// Output file path
+        /// [OPTIONAL] Output file path (Defaults to cwd)
         #[arg(short, long)]
         out_path: Option<PathBuf>,
-        /// Path to Private Key
+        /// [OPTIONAL] Path to Private Key (Defaults to `~/.config/rrsa/`)
         #[arg(short, long)]
         key_path: Option<PathBuf>,
     },
