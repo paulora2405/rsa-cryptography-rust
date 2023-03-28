@@ -8,14 +8,17 @@ description = "RSA keys generation, encryption and decryption implemented in rus
 [lib]
 name = "rrsa_common"
 path = "src/lib/lib.rs"
+bench = false
 
 [[bin]]
 name = "rrsa-cli"
 path = "src/bin/cli.rs"
+bench = false
 
 [[bin]]
 name = "rrsa-gui"
 path = "src/bin/gui.rs"
+bench = false
 
 [dependencies]
 base64 = "0.21.0"
@@ -30,3 +33,12 @@ num-traits = "0.2.15"
 rand = "0.8.5"
 regex = "1.5.6"
 rfd = "0.11.2"
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
+csv = "1.2.1"
+serde = "1.0.158"
+
+[[bench]]
+harness = false
+name = "my_bench"
