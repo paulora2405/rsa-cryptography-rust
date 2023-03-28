@@ -96,14 +96,14 @@ impl Key {
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes_read);
         let mut bytes_amount_read = max_bytes_read;
 
-        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len());
-        pb.set_style(
+        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len()).with_style(
             ProgressStyle::with_template(
                 "Encrypting {spinner:.blue} [{wide_bar:.cyan/red}] {bytes}/{total_bytes}",
             )
             .unwrap()
             .progress_chars("#>-"),
         );
+        pb.tick();
 
         while bytes_amount_read == max_bytes_read {
             source_bytes.fill(0u8);
@@ -118,8 +118,10 @@ impl Key {
             let size_diff = (max_bytes_write) - destiny_bytes.len();
             destiny_bytes.append(&mut vec![0u8; size_diff]);
             let _bytes_amount_written = file_out.write(&destiny_bytes).unwrap();
+
             pb.inc(bytes_amount_read as u64);
         }
+
         pb.finish_with_message("Done!");
     }
 
@@ -132,14 +134,14 @@ impl Key {
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes);
         let mut bytes_amount_read = max_bytes;
 
-        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len());
-        pb.set_style(
+        let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len()).with_style(
             ProgressStyle::with_template(
                 "Decrypting {spinner:.blue} [{wide_bar:.cyan/red}] {bytes}/{total_bytes}",
             )
             .unwrap()
-            .progress_chars("-<#"),
+            .progress_chars("#>-"),
         );
+        pb.tick();
 
         while bytes_amount_read == max_bytes {
             source_bytes.fill(0u8);
@@ -152,8 +154,10 @@ impl Key {
             destiny_bytes.clear();
             let _ = destiny_bytes.write(&message.to_bytes_le()).unwrap();
             let _bytes_amount_written = file_out.write(&destiny_bytes).unwrap();
+
             pb.inc(bytes_amount_read as u64);
         }
+
         pb.finish_with_message("Done!");
     }
 }
