@@ -5,7 +5,6 @@ use num_traits::ToPrimitive;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::time::Duration;
 
 trait SizeInBytes {
     fn size_in_bytes(&self) -> usize;
@@ -95,13 +94,8 @@ impl Key {
         let mut destiny_bytes = Vec::<u8>::with_capacity(max_bytes_read);
         let mut bytes_amount_read = max_bytes_read;
         let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len())
-            .with_style(
-                ProgressStyle::with_template("{msg} {bytes}/{total_bytes} {spinner:.red} ")
-                    .unwrap()
-                    .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ "),
-            )
+            .with_style(ProgressStyle::with_template("{msg} {bytes}/{total_bytes}").unwrap())
             .with_message("Encrypting");
-        pb.enable_steady_tick(Duration::from_millis(100));
 
         while bytes_amount_read == max_bytes_read {
             source_bytes.fill(0u8);
@@ -130,13 +124,8 @@ impl Key {
         let mut bytes_amount_read = max_bytes;
 
         let pb = indicatif::ProgressBar::new(file_in.metadata().unwrap().len())
-            .with_style(
-                ProgressStyle::with_template("{msg} {bytes}/{total_bytes} {spinner:.red} ")
-                    .unwrap()
-                    .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ "),
-            )
+            .with_style(ProgressStyle::with_template("{msg} {bytes}/{total_bytes}").unwrap())
             .with_message("Decrypting");
-        pb.enable_steady_tick(Duration::from_millis(100));
 
         while bytes_amount_read == max_bytes {
             source_bytes.fill(0u8);
