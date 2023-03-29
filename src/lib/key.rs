@@ -6,7 +6,7 @@ use num_traits::{Num, One, Signed};
 use regex::Regex;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum KeyVariant {
@@ -143,10 +143,6 @@ impl KeyPair {
         // differentiate if path already contains '.pub' extension (it should not)
         if !self.is_valid() {
             return Err(String::from("Tried writting an Invalid Key pair"));
-        } else if let Some(path) = &maybe_file_path {
-            if path.extension().is_some() {
-                todo!();
-            }
         }
 
         let KeyPair {
@@ -220,12 +216,9 @@ impl Key {
             } else if path.is_dir() {
                 final_path = path.join(self.variant.get_filename());
             } else {
-                // TODO: this should assume a path is for a file name, not dir name
-                //       but also differentiate is last component of path contains extension .pub, so that there is no conflit
-                // todo!();
-                // THIS ASSUMES THE PATH IS FOR A DIRECTORY
-                create_dir_all(&path).expect("Failed to create necessary parent directories!");
-                final_path = path.join(self.variant.get_filename());
+                create_dir_all(path.parent().unwrap_or(Path::new(".")))
+                    .expect("Failed to create necessary parent directories!");
+                final_path = path;
             }
         } else if let Some(dirs) = BaseDirs::new() {
             let parent_dir = dirs.config_dir().join(Key::APP_CONFIG_DIR);
