@@ -4,7 +4,7 @@ use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 trait SizeInBytes {
     fn size_in_bytes(&self) -> usize;
@@ -29,8 +29,7 @@ impl Key {
             if file_path.is_file() {
                 file_path
             } else {
-                // TODO: handle this case better, maybe return a Result<>?
-                panic!("File '{}' does not exist", file_path.to_string_lossy());
+                panic!("Path '{}' is inexistent", file_path.to_string_lossy());
             }
         };
         let out_path = {
@@ -54,15 +53,9 @@ impl Key {
                             .with_extension(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
                     }
                 } else {
-                    create_dir_all(&out_path).expect("Failed to create parents directories");
-                    match self.variant {
-                        crate::key::KeyVariant::PublicKey => out_path
-                            .join(Key::DEFAULT_ENCRYPTED_FILE_NAME)
-                            .join(Key::DEFAULT_ENCRYPTED_FILE_EXTENSION),
-                        crate::key::KeyVariant::PrivateKey => out_path
-                            .join(Key::DEFAULT_DECRYPTED_FILE_NAME)
-                            .with_extension(Key::DEFAULT_DECRYPTED_FILE_EXTENSION),
-                    }
+                    create_dir_all(out_path.parent().unwrap_or(Path::new(".")))
+                        .expect("Failed to create parents directories");
+                    out_path
                 }
             } else {
                 match self.variant {
@@ -146,12 +139,16 @@ impl Key {
 
 #[cfg(test)]
 mod tests {
+    use lipsum::lipsum;
+
     use super::*;
 
     #[test]
     fn test_encrypt_decrypt() {
-        // TODO: generate used files inside unit test
-        let plain_file = PathBuf::from("messages/lorem.txt");
+        let plain_file = Path::new("messages/lorem.txt");
+        let mut test_file = File::create(plain_file).unwrap();
+        let _res = test_file.write(lipsum(200).as_bytes()).unwrap();
+
         let encrypted = Some(PathBuf::from("messages/"));
         let decrypted = Some(PathBuf::from("messages/"));
 
@@ -159,7 +156,7 @@ mod tests {
         let priv_path = Some(PathBuf::from("keys"));
         let pub_key = Key::read_key_file(pub_path, crate::key::KeyVariant::PublicKey).unwrap();
         let priv_key = Key::read_key_file(priv_path, crate::key::KeyVariant::PrivateKey).unwrap();
-        pub_key.encrypt_file(plain_file, encrypted);
+        pub_key.encrypt_file(plain_file.to_path_buf(), encrypted);
         let encrypted = Some(PathBuf::from("messages/encrypted.cypher"));
         priv_key.decrypt_file(encrypted.unwrap(), decrypted);
     }
