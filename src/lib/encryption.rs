@@ -1,4 +1,4 @@
-use crate::key::Key;
+use crate::key::{Key, KeyVariant};
 use indicatif::ProgressStyle;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
@@ -80,6 +80,7 @@ impl Key {
 
     /// Encrypts a file chunk by chunk
     pub fn encrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
+        assert_eq!(self.variant, KeyVariant::PublicKey);
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let max_bytes_read = self.modulus.size_in_bytes() - Key::ENCRYPTION_BYTE_OFFSET; // always > 0 because min key size is 32 bits == 4 bytes
         let max_bytes_write = self.modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
@@ -110,6 +111,7 @@ impl Key {
 
     /// decrypts a file chunk by chunk
     pub fn decrypt_file(&self, file_path: PathBuf, out_path: Option<PathBuf>) {
+        assert_eq!(self.variant, KeyVariant::PrivateKey);
         let (mut file_in, mut file_out) = self.open_input_output(file_path, out_path);
         let max_bytes = self.modulus.size_in_bytes() + Key::ENCRYPTION_BYTE_OFFSET;
         let mut source_bytes = vec![0u8; max_bytes];
@@ -139,21 +141,39 @@ impl Key {
 
 #[cfg(test)]
 mod tests {
-    use lipsum::lipsum;
-
     use super::*;
+    use crate::key::KeyPair;
+    use lipsum::lipsum;
 
     #[test]
     fn test_encrypt_decrypt() {
         let plain_file = Path::new("messages/lorem.txt");
+        create_dir_all("./messages").unwrap();
         let mut test_file = File::create(plain_file).unwrap();
         let _res = test_file.write(lipsum(200).as_bytes()).unwrap();
+
+        let public_key = Key {
+            exponent: BigUint::from(65_537u32), // default value isn't present in key file
+            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            variant: KeyVariant::PublicKey,
+        };
+        let private_key = Key {
+            exponent: BigUint::from(343637873u32), // 0x147b7f71
+            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            variant: KeyVariant::PrivateKey,
+        };
+        let keypair = KeyPair {
+            public_key,
+            private_key,
+        };
+        let file_path = PathBuf::from("./keys/tests/key_pair");
+        keypair.write_keypair_files(Some(file_path)).unwrap();
 
         let encrypted = Some(PathBuf::from("messages/"));
         let decrypted = Some(PathBuf::from("messages/"));
 
-        let pub_path = Some(PathBuf::from("keys"));
-        let priv_path = Some(PathBuf::from("keys"));
+        let pub_path = Some(PathBuf::from("keys/tests/key_pair.pub"));
+        let priv_path = Some(PathBuf::from("keys/tests/key_pair"));
         let pub_key = Key::read_key_file(pub_path, crate::key::KeyVariant::PublicKey).unwrap();
         let priv_key = Key::read_key_file(priv_path, crate::key::KeyVariant::PrivateKey).unwrap();
         pub_key.encrypt_file(plain_file.to_path_buf(), encrypted);
