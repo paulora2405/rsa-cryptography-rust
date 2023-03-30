@@ -7,7 +7,7 @@ description = "RSA keys generation, encryption and decryption implemented in rus
 
 [lib]
 name = "rrsa_common"
-path = "src/lib/lib.rs"
+path = "src/lib/rrsa_common.rs"
 bench = false
 
 [[bin]]
