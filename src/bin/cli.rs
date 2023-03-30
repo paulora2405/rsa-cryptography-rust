@@ -14,7 +14,7 @@ fn main() -> Result<(), String> {
         } => {
             let key_pair =
                 KeyPair::generate_keys(maybe_key_size, !use_ndex, print_results, print_progress);
-            key_pair.write_key_files(out_path)?;
+            key_pair.write_keypair_files(out_path)?;
         }
         RsaCommands::Encrypt {
             file_path,
