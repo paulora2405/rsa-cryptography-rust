@@ -469,6 +469,7 @@ mod tests {
 
     #[test]
     fn test_invalid_key() {
+        create_dir_all("./keys/tests").unwrap();
         let filepath_priv = Path::new("./keys/tests/invalid_key");
         let filepath_pub = filepath_priv.with_extension("pub");
         let mut file_priv = File::create(filepath_priv).unwrap();
