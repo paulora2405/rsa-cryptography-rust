@@ -4,6 +4,7 @@ use directories::BaseDirs;
 use num_bigint::BigUint;
 use num_traits::{Num, One, Signed};
 use regex::Regex;
+use std::ffi::OsStr;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -139,7 +140,7 @@ impl KeyPair {
         key_pair
     }
 
-    pub fn write_key_files(&self, maybe_file_path: Option<PathBuf>) -> Result<(), String> {
+    pub fn write_keypair_files(&self, maybe_file_path: Option<PathBuf>) -> Result<(), String> {
         // differentiate if path already contains '.pub' extension (it should not)
         if !self.is_valid() {
             return Err(String::from("Tried writting an Invalid Key pair"));
@@ -151,11 +152,24 @@ impl KeyPair {
         } = self;
 
         match maybe_file_path {
-            Some(path) => {
-                // let pub_path = path.join(Key::PUBLIC_KEY_FILE_SUFFIX);
-                public_key.write_key_file(Some(path.clone()));
-                private_key.write_key_file(Some(path));
-            }
+            Some(path) => match path.extension() {
+                Some(extension) if extension == Key::PUBLIC_KEY_FILE_EXTENSION => {
+                    eprintln!("File path should not contain a {} extension at this point, it will be automatically inserted into the correct key file",
+                        extension.to_string_lossy()
+                    );
+                    public_key.write_key_file(Some(path.clone()));
+                    let priv_path = path.parent().unwrap_or(Path::new(".")).join(
+                        path.file_stem()
+                            .unwrap_or(OsStr::new(Key::DEFAULT_KEY_NAME)),
+                    );
+                    private_key.write_key_file(Some(priv_path));
+                }
+                _ => {
+                    let pub_path = path.with_extension(Key::PUBLIC_KEY_FILE_EXTENSION);
+                    public_key.write_key_file(Some(pub_path));
+                    private_key.write_key_file(Some(path));
+                }
+            },
             None => {
                 public_key.write_key_file(None);
                 private_key.write_key_file(None);
@@ -196,7 +210,7 @@ impl Key {
     const DEFAULT_EXPONENT: u32 = 65_537u32;
     const BIGUINT_STR_RADIX: u32 = 16;
     const APP_CONFIG_DIR: &str = crate_name!();
-    const PUBLIC_KEY_FILE_SUFFIX: &str = ".pub";
+    const PUBLIC_KEY_FILE_EXTENSION: &str = "pub";
     const DEFAULT_KEY_NAME: &str = "rrsa_key";
     const PUBLIC_KEY_NORMAL_HEADER: &str = "rrsa ";
     const PUBLIC_KEY_NDEX_HEADER: &str = "rrsa-ndex ";
@@ -304,7 +318,7 @@ impl Key {
                         )
                         .map_err(|e| e.to_string())?,
 
-                        exponent: if file_buf[0] == Key::PUBLIC_KEY_NDEX_HEADER {
+                        exponent: if file_buf[0] == Key::PUBLIC_KEY_NDEX_HEADER.trim() {
                             BigUint::from_str_radix(file_buf[2].trim(), Key::BIGUINT_STR_RADIX)
                                 .map_err(|e| e.to_string())?
                         } else {
@@ -347,7 +361,7 @@ impl KeyVariant {
     /// Returns the default filename for both Public and Private Key variants.
     fn get_filename(&self) -> String {
         if *self == KeyVariant::PublicKey {
-            Key::DEFAULT_KEY_NAME.to_string() + Key::PUBLIC_KEY_FILE_SUFFIX
+            Key::DEFAULT_KEY_NAME.to_string() + "." + Key::PUBLIC_KEY_FILE_EXTENSION
         } else {
             Key::DEFAULT_KEY_NAME.to_string()
         }
@@ -454,17 +468,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_invalid_key() {
-        let res = Key::read_key_file(
-            Some(PathBuf::from("keys/tests/invalid_key.pub")),
-            KeyVariant::PublicKey,
-        );
+        let filepath_priv = Path::new("./keys/tests/invalid_key");
+        let filepath_pub = filepath_priv.with_extension("pub");
+        let mut file_priv = File::create(filepath_priv).unwrap();
+        let mut file_pub = File::create(filepath_pub.clone()).unwrap();
+        let key_str_priv =
+            "-----BEGIN RSA-RUST PRIVATE KEY-----\n147h7f71\nn147h7f71\n-----END RSA-RUST PRIVATE KEY-----\n";
+        let key_str_pub = "rsa-rust 9668f701 5a167f\n";
+        let _ = file_priv.write(key_str_priv.as_bytes()).unwrap();
+        let _ = file_pub.write(key_str_pub.as_bytes()).unwrap();
+
+        let res = Key::read_key_file(Some(filepath_pub), KeyVariant::PublicKey);
         assert!(res.is_err());
-        let res = Key::read_key_file(
-            Some(PathBuf::from("keys/tests/invalid_key")),
-            KeyVariant::PrivateKey,
-        );
+
+        let res = Key::read_key_file(Some(filepath_priv.to_path_buf()), KeyVariant::PrivateKey);
         assert!(res.is_err());
     }
 
@@ -492,16 +510,23 @@ mod tests {
     }
 
     #[test]
-    fn test_write_key_file() {
-        // let mut key = Key {
-        //     exponent: BigUint::from(1u32),
-        //     modulus: BigUint::from(1u32),
-        //     variant: KeyVariant::PublicKey,
-        // };
-        // let path = Some(Path::new("teste"));
-        // key.write_key_file(path);
-        // key.variant = KeyVariant::PrivateKey;
-        // // key.write_key_file(path);
-        // key.write_key_file(None);
+    fn test_write_key_pair() {
+        let public_key = Key {
+            exponent: BigUint::from(65_537u32), // default value isn't present in key file
+            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            variant: KeyVariant::PublicKey,
+        };
+        let private_key = Key {
+            exponent: BigUint::from(343637873u32), // 0x147b7f71
+            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            variant: KeyVariant::PrivateKey,
+        };
+        let keypair = KeyPair {
+            public_key,
+            private_key,
+        };
+        let file_path = PathBuf::from("./keys/tests/key_pair");
+
+        keypair.write_keypair_files(Some(file_path)).unwrap();
     }
 }
