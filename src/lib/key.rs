@@ -1,6 +1,6 @@
 use crate::math::{euclides_extended, mod_pow, PrimeGenerator};
 use clap::crate_name;
-use directories::BaseDirs;
+use directories::ProjectDirs;
 use num_bigint::BigUint;
 use num_traits::{Num, One, Signed};
 use regex::Regex;
@@ -234,8 +234,8 @@ impl Key {
                     .expect("Failed to create necessary parent directories!");
                 final_path = path;
             }
-        } else if let Some(dirs) = BaseDirs::new() {
-            let parent_dir = dirs.config_dir().join(Key::APP_CONFIG_DIR);
+        } else if let Some(dirs) = ProjectDirs::from("", "", Key::APP_CONFIG_DIR) {
+            let parent_dir = dirs.config_dir().to_path_buf();
             create_dir_all(&parent_dir).expect("Failed to create necessary parent directories!");
             final_path = parent_dir.join(self.variant.get_filename());
         } else {
@@ -293,11 +293,8 @@ impl Key {
             } else {
                 return Err(String::from("Input path is invalid"));
             }
-        } else if let Some(dirs) = BaseDirs::new() {
-            final_path = dirs
-                .config_dir()
-                .join(Key::APP_CONFIG_DIR)
-                .join(variant.get_filename());
+        } else if let Some(dirs) = ProjectDirs::from("", "", Key::APP_CONFIG_DIR) {
+            final_path = dirs.config_dir().join(variant.get_filename());
         } else {
             eprintln!("Failed to find user's config directory! Falling back to cwd...");
             final_path = PathBuf::from(".")
