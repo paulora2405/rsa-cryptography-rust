@@ -1,9 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use eframe::egui;
-
-// TODO: use `directories` crate to default keys input/output location
-// make output file arg for encryption and decryption optional, defaulting to cwd and with default names
+use std::default;
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
@@ -11,36 +9,91 @@ fn main() -> Result<(), eframe::Error> {
         initial_window_size: Some(egui::vec2(520.0, 240.0)),
         ..Default::default()
     };
-    eframe::run_native(
-        "RRSA - Key Generation, Encryption and Decryption",
-        options,
-        Box::new(|_cc| Box::<RrsaApp>::default()),
-    )
+    eframe::run_native("RRSA", options, Box::new(|_cc| Box::<RrsaApp>::default()))
 }
 
 #[derive(Default)]
 struct RrsaApp {
     dropped_files: Vec<egui::DroppedFile>,
     picked_path: Option<String>,
+    interface_state: InterfaceState,
+}
+
+#[derive(Default)]
+enum InterfaceState {
+    #[default]
+    MainMenu,
+    Keygen,
+    Encrypt,
+    Decrypt,
+    ManageKeychain,
 }
 
 impl eframe::App for RrsaApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Drag-and-drop files onto the window!");
+            match &self.interface_state {
+                // TODO: make side by side buttons
+                InterfaceState::MainMenu => {
+                    ui.label("Welcome to the main menu!");
 
-            if ui.button("Open file…").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.picked_path = Some(path.display().to_string());
+                    if ui.button("Key generation!").clicked() {
+                        self.interface_state = InterfaceState::Keygen;
+                    }
+                    if ui.button("Encrypt!").clicked() {
+                        self.interface_state = InterfaceState::Encrypt;
+                    }
+                    if ui.button("Decrypt!").clicked() {
+                        self.interface_state = InterfaceState::Decrypt;
+                    }
+                    if ui.button("Keychain manager!").clicked() {
+                        self.interface_state = InterfaceState::ManageKeychain;
+                    }
                 }
-            }
+                InterfaceState::Keygen => {
+                    if ui.button("Go back!").clicked() {
+                        self.interface_state = InterfaceState::MainMenu;
+                    }
+                    ui.label("Do you want to generate a key pair?");
+                }
+                InterfaceState::Encrypt => {
+                    if ui.button("Go back!").clicked() {
+                        self.interface_state = InterfaceState::MainMenu;
+                    }
+                    ui.label("Drag-and-drop files onto the window!");
+                    if ui.button("Open file…").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().pick_file() {
+                            self.picked_path = Some(path.display().to_string());
+                        }
+                    }
 
-            if let Some(picked_path) = &self.picked_path {
-                ui.horizontal(|ui| {
-                    ui.label("Picked file:");
-                    ui.monospace(picked_path);
-                });
-            }
+                    if let Some(picked_path) = &self.picked_path {
+                        ui.horizontal(|ui| {
+                            ui.label("Picked file:");
+                            ui.monospace(picked_path);
+                        });
+                    }
+                }
+                InterfaceState::Decrypt => {
+                    if ui.button("Go back!").clicked() {
+                        self.interface_state = InterfaceState::MainMenu;
+                    }
+                    ui.label("Drag-and-drop files onto the window!");
+                    if ui.button("Open file…").clicked() {
+                        if let Some(path) = rfd::FileDialog::new().pick_file() {
+                            self.picked_path = Some(path.display().to_string());
+                        }
+                    }
+
+                    if let Some(picked_path) = &self.picked_path {
+                        ui.horizontal(|ui| {
+                            ui.label("Picked file:");
+                            ui.monospace(picked_path);
+                        });
+                    }
+                }
+                InterfaceState::ManageKeychain => todo!(),
+            };
 
             // Show dropped files (if any):
             if !self.dropped_files.is_empty() {
