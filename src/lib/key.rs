@@ -41,6 +41,7 @@ impl KeyPair {
     /// Step 5: Calculate `D` such that `E*D = 1 (mod λ(N))`
     /// # Panics
     /// Panics if `key_size` is not in (32, 4096) interval
+    #[allow(clippy::many_single_char_names)]
     #[must_use]
     pub fn generate_keys(
         maybe_key_size: Option<u16>,
@@ -58,7 +59,7 @@ impl KeyPair {
 
         loop {
             attempts += 1;
-            print_flush(&format!("Attempt number {}\n", attempts), print_progress);
+            print_flush(&format!("Attempt number {attempts}\n"), print_progress);
             print_flush("Generating P...", print_progress);
             p = gen.random_prime(max_bits);
             print_flush("DONE\nGenerating Q...", print_progress);
@@ -123,18 +124,18 @@ impl KeyPair {
         assert!(key_pair.is_valid());
 
         if print_results {
-            println!("Max bits for N: {}", key_size);
-            println!("Max bits for P and Q: {}", max_bits);
-            println!("Attempts needed: {}", attempts);
+            println!("Max bits for N: {key_size}");
+            println!("Max bits for P and Q: {max_bits}");
+            println!("Attempts needed: {attempts}");
             println!("The values calculated were:");
-            println!("P = {}", p);
-            println!("Q = {}", q);
-            println!("N = {}", n);
-            println!("Tot(N) = {}", totn);
+            println!("P = {p}");
+            println!("Q = {q}");
+            println!("N = {n}");
+            println!("Tot(N) = {totn}");
             if !use_default_exponent {
-                println!("E (Non default) = {}", e);
+                println!("E (Non default) = {e}");
             }
-            println!("D = {}", d);
+            println!("D = {d}");
         }
 
         key_pair
@@ -151,12 +152,12 @@ impl KeyPair {
             private_key,
         } = self;
 
-        match maybe_file_path {
-            Some(path) => match path.extension() {
+        if let Some(path) = maybe_file_path {
+            match path.extension() {
                 Some(extension) if extension == Key::PUBLIC_KEY_FILE_EXTENSION => {
                     eprintln!("File path should not contain a {} extension at this point, it will be automatically inserted into the correct key file",
-                        extension.to_string_lossy()
-                    );
+                    extension.to_string_lossy()
+                );
                     public_key.write_key_file(Some(path.clone()));
                     let priv_path = path.parent().unwrap_or(Path::new(".")).join(
                         path.file_stem()
@@ -169,11 +170,10 @@ impl KeyPair {
                     public_key.write_key_file(Some(pub_path));
                     private_key.write_key_file(Some(path));
                 }
-            },
-            None => {
-                public_key.write_key_file(None);
-                private_key.write_key_file(None);
             }
+        } else {
+            public_key.write_key_file(None);
+            private_key.write_key_file(None);
         }
 
         Ok(())
@@ -209,16 +209,16 @@ impl Key {
     const DEFAULT_KEY_SIZE: u16 = 4096;
     const DEFAULT_EXPONENT: u32 = 65_537u32;
     const BIGUINT_STR_RADIX: u32 = 16;
-    const APP_CONFIG_DIR: &str = crate_name!();
-    const PUBLIC_KEY_FILE_EXTENSION: &str = "pub";
-    const DEFAULT_KEY_NAME: &str = "rrsa_key";
-    const PUBLIC_KEY_NORMAL_HEADER: &str = "rrsa ";
-    const PUBLIC_KEY_NDEX_HEADER: &str = "rrsa-ndex ";
+    const APP_CONFIG_DIR: &'static str = crate_name!();
+    const PUBLIC_KEY_FILE_EXTENSION: &'static str = "pub";
+    const DEFAULT_KEY_NAME: &'static str = "rrsa_key";
+    const PUBLIC_KEY_NORMAL_HEADER: &'static str = "rrsa ";
+    const PUBLIC_KEY_NDEX_HEADER: &'static str = "rrsa-ndex ";
     const PUBLIC_KEY_SPLIT_CHAR: char = ' ';
-    const PRIVATE_KEY_HEADER: &str = "-----BEGIN RSA-RUST PRIVATE KEY-----\n";
-    const PRIVATE_KEY_FOOTER: &str = "\n-----END RSA-RUST PRIVATE KEY-----\n";
+    const PRIVATE_KEY_HEADER: &'static str = "-----BEGIN RSA-RUST PRIVATE KEY-----\n";
+    const PRIVATE_KEY_FOOTER: &'static str = "\n-----END RSA-RUST PRIVATE KEY-----\n";
     const PRIVATE_KEY_SPLIT_CHAR: char = '\n';
-    const KEY_FILE_STR_RADIX_REGEX: &str = r"^[0-9a-f]+$";
+    const KEY_FILE_STR_RADIX_REGEX: &'static str = r"^[0-9a-f]+$";
 
     /// Writes Public or Private key file to output path.
     pub fn write_key_file(&self, maybe_path: Option<PathBuf>) {
@@ -402,7 +402,7 @@ impl IsDefaultExponent for BigUint {
 
 fn print_flush(string: &str, print_progress: bool) {
     if print_progress {
-        print!("{}", string);
+        print!("{string}");
         std::io::stdout().flush().expect("Could not flush stdout");
     }
 }
@@ -416,25 +416,25 @@ mod tests {
         let key_pair = KeyPair {
             public_key: Key {
                 exponent: BigUint::from(65_537u32), // default value isn't present in key file
-                modulus: BigUint::from(2523461377u64), // 0x9668f701
+                modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
                 variant: KeyVariant::PublicKey,
             },
             private_key: Key {
-                exponent: BigUint::from(343637873u32), // 0x147b7f71
-                modulus: BigUint::from(2523461377u64), // 0x9668f701
+                exponent: BigUint::from(343_637_873_u32), // 0x147b7f71
+                modulus: BigUint::from(2_523_461_377u64), // 0x9668f701
                 variant: KeyVariant::PrivateKey,
             },
         };
         assert!(key_pair.is_valid());
         let key_pair = KeyPair {
             public_key: Key {
-                exponent: BigUint::from(23447u64),    // 0x5b97
-                modulus: BigUint::from(298224757u64), // 0x11c68c75
+                exponent: BigUint::from(23447u64),       // 0x5b97
+                modulus: BigUint::from(298_224_757_u64), // 0x11c68c75
                 variant: KeyVariant::PublicKey,
             },
             private_key: Key {
-                exponent: BigUint::from(58335719u64), // 0x37a21e7
-                modulus: BigUint::from(298224757u64), // 0x11c68c75
+                exponent: BigUint::from(58_335_719_u64), // 0x37a21e7
+                modulus: BigUint::from(298_224_757_u64), // 0x11c68c75
                 variant: KeyVariant::PrivateKey,
             },
         };
@@ -445,12 +445,12 @@ mod tests {
     fn test_key_import_dex() {
         let public_key = Key {
             exponent: BigUint::from(65_537u32), // default value isn't present in key file
-            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
             variant: KeyVariant::PublicKey,
         };
         let private_key = Key {
-            exponent: BigUint::from(343637873u32), // 0x147b7f71
-            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            exponent: BigUint::from(343_637_873_u32),  // 0x147b7f71
+            modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
             variant: KeyVariant::PrivateKey,
         };
 
@@ -487,13 +487,13 @@ mod tests {
     #[test]
     fn test_key_import_ndex() {
         let public_key = Key {
-            exponent: BigUint::from(23447u64),    // 0x5b97
-            modulus: BigUint::from(298224757u64), // 0x11c68c75
+            exponent: BigUint::from(23447u64),       // 0x5b97
+            modulus: BigUint::from(298_224_757_u64), // 0x11c68c75
             variant: KeyVariant::PublicKey,
         };
         let private_key = Key {
-            exponent: BigUint::from(58335719u64), // 0x37a21e7
-            modulus: BigUint::from(298224757u64), // 0x11c68c75
+            exponent: BigUint::from(58_335_719_u64), // 0x37a21e7
+            modulus: BigUint::from(298_224_757_u64), // 0x11c68c75
             variant: KeyVariant::PrivateKey,
         };
 
@@ -511,12 +511,12 @@ mod tests {
     fn test_write_key_pair() {
         let public_key = Key {
             exponent: BigUint::from(65_537u32), // default value isn't present in key file
-            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
             variant: KeyVariant::PublicKey,
         };
         let private_key = Key {
-            exponent: BigUint::from(343637873u32), // 0x147b7f71
-            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            exponent: BigUint::from(343_637_873_u32),  // 0x147b7f71
+            modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
             variant: KeyVariant::PrivateKey,
         };
         let keypair = KeyPair {

@@ -23,6 +23,7 @@ impl PrimeGenerator {
         Self { prime, odd, rng }
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn is_composite(n: &BigUint, a: &BigUint, d: &BigUint, s: &BigUint) -> bool {
         let mut x: BigUint = mod_pow(a, d, n);
 
@@ -146,7 +147,7 @@ mod tests {
     fn test_miller_rabbin() {
         let p = 13u8;
         let np = 27u8;
-        let bp = BigUint::from(918020423304243854760595069249u128);
+        let bp = BigUint::from(918_020_423_304_243_854_760_595_069_249_u128);
         assert!(PrimeGenerator::miller_rabin(&BigUint::from(p)));
         assert!(!PrimeGenerator::miller_rabin(&BigUint::from(np)));
         assert!(PrimeGenerator::miller_rabin(&bp));

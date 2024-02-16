@@ -19,10 +19,10 @@ impl SizeInBytes for BigUint {
 
 impl Key {
     const ENCRYPTION_BYTE_OFFSET: usize = 1;
-    const DEFAULT_ENCRYPTED_FILE_EXTENSION: &str = "cypher";
-    const DEFAULT_ENCRYPTED_FILE_NAME: &str = "encrypted";
-    const DEFAULT_DECRYPTED_FILE_EXTENSION: &str = "message";
-    const DEFAULT_DECRYPTED_FILE_NAME: &str = "decrypted";
+    const DEFAULT_ENCRYPTED_FILE_EXTENSION: &'static str = "cypher";
+    const DEFAULT_ENCRYPTED_FILE_NAME: &'static str = "encrypted";
+    const DEFAULT_DECRYPTED_FILE_EXTENSION: &'static str = "message";
+    const DEFAULT_DECRYPTED_FILE_NAME: &'static str = "decrypted";
 
     fn open_input_output(&self, file_path: PathBuf, out_path: Option<PathBuf>) -> (File, File) {
         let file_path = {
@@ -154,12 +154,12 @@ mod tests {
 
         let public_key = Key {
             exponent: BigUint::from(65_537u32), // default value isn't present in key file
-            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
             variant: KeyVariant::PublicKey,
         };
         let private_key = Key {
-            exponent: BigUint::from(343637873u32), // 0x147b7f71
-            modulus: BigUint::from(2523461377u64), // 0x9668f701
+            exponent: BigUint::from(343_637_873_u32),  // 0x147b7f71
+            modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
             variant: KeyVariant::PrivateKey,
         };
         let keypair = KeyPair {
@@ -177,7 +177,7 @@ mod tests {
         let pub_key = Key::read_key_file(pub_path, crate::key::KeyVariant::PublicKey).unwrap();
         let priv_key = Key::read_key_file(priv_path, crate::key::KeyVariant::PrivateKey).unwrap();
         pub_key.encrypt_file(plain_file.to_path_buf(), encrypted);
-        let encrypted = Some(PathBuf::from("messages/encrypted.cypher"));
-        priv_key.decrypt_file(encrypted.unwrap(), decrypted);
+        let encrypted = PathBuf::from("messages/encrypted.cypher");
+        priv_key.decrypt_file(encrypted, decrypted);
     }
 }
