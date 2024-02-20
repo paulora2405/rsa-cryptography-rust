@@ -7,8 +7,7 @@ use num_bigint::BigUint;
 
 mod file;
 mod generation;
-mod reading;
-mod writing;
+mod str;
 
 /// Enum to dictate if Key is a Public or Private key.
 #[derive(Debug, PartialEq, Eq)]

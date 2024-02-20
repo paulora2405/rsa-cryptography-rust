@@ -1,5 +1,5 @@
-use super::{Key, KeyPair, KeyVariant};
 use crate::error::RsaResult;
+use crate::key::{Key, KeyPair, KeyVariant};
 use clap::crate_name;
 use directories::ProjectDirs;
 use std::{

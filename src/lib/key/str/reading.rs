@@ -1,5 +1,5 @@
-use super::{Key, KeyVariant};
 use crate::error::{RsaError, RsaResult};
+use crate::key::{Key, KeyVariant};
 use num_bigint::BigUint;
 use num_traits::Num;
 use regex::Regex;

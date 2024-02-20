@@ -1,18 +1,17 @@
-use super::{Key, KeyVariant};
-use crate::key::IsDefaultExponent;
+use crate::key::{IsDefaultExponent, Key, KeyVariant};
 use std::fmt;
 
 impl Key {
-    pub(super) const BIGUINT_STR_RADIX: u32 = 16;
-    pub(super) const KEY_FILE_STR_RADIX_REGEX: &'static str = r"^[0-9a-f]+$";
+    pub(crate) const BIGUINT_STR_RADIX: u32 = 16;
+    pub(crate) const KEY_FILE_STR_RADIX_REGEX: &'static str = r"^[0-9a-f]+$";
     /// Header for a Public Key with the default exponent.
-    pub(super) const PUBLIC_KEY_NORMAL_HEADER: &'static str = "rrsa";
+    pub(crate) const PUBLIC_KEY_NORMAL_HEADER: &'static str = "rrsa";
     /// Header for a Public Key with a non default exponent.
-    pub(super) const PUBLIC_KEY_NDEX_HEADER: &'static str = "rrsa-ndex";
-    pub(super) const PUBLIC_KEY_SPLIT_CHAR: char = ' ';
-    pub(super) const PRIVATE_KEY_HEADER: &'static str = "-----BEGIN RSA-RUST PRIVATE KEY-----";
-    pub(super) const PRIVATE_KEY_FOOTER: &'static str = "-----END RSA-RUST PRIVATE KEY-----";
-    pub(super) const PRIVATE_KEY_SPLIT_CHAR: char = '\n';
+    pub(crate) const PUBLIC_KEY_NDEX_HEADER: &'static str = "rrsa-ndex";
+    pub(crate) const PUBLIC_KEY_SPLIT_CHAR: char = ' ';
+    pub(crate) const PRIVATE_KEY_HEADER: &'static str = "-----BEGIN RSA-RUST PRIVATE KEY-----";
+    pub(crate) const PRIVATE_KEY_FOOTER: &'static str = "-----END RSA-RUST PRIVATE KEY-----";
+    pub(crate) const PRIVATE_KEY_SPLIT_CHAR: char = '\n';
 }
 
 impl fmt::Display for Key {
@@ -60,7 +59,8 @@ impl fmt::Display for Key {
 
 #[cfg(test)]
 mod tests {
-    use super::super::*;
+    use super::*;
+    use num_bigint::BigUint;
     use pretty_assertions::assert_eq;
 
     #[test]
