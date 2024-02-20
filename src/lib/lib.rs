@@ -6,6 +6,6 @@
 //! It should not be used for real world applications, given it has many security flaws and shortcomings.
 
 pub mod encoding;
-mod error;
+pub mod error;
 pub mod key;
 mod math;

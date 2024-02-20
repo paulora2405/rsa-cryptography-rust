@@ -3,6 +3,7 @@ name = "rrsa"
 version = "0.2.0"
 edition = "2021"
 authors = ["Paulo Roberto Albuquerque"]
+readme="README.md"
 homepage = "https://github.com/paulora2405/rsa-cryptography-rust"
 description = "RSA keys generation, encryption and decryption implemented in rust, for learning purposes only."
 

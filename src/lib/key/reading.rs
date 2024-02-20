@@ -1,17 +1,16 @@
+use super::{Key, KeyVariant};
+use crate::error::{RsaError, RsaResult};
 use num_bigint::BigUint;
 use num_traits::Num;
 use regex::Regex;
-
-use super::{Key, KeyVariant};
-use crate::error::RsaError;
 use std::str::FromStr;
-
-impl KeyVariant {}
 
 impl FromStr for Key {
     type Err = RsaError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    /// Extracts a [`Key`] from the given string slice,
+    /// that represented the file content of it.
+    fn from_str(s: &str) -> RsaResult<Self> {
         if s.starts_with(Key::PUBLIC_KEY_NDEX_HEADER) {
             Key::public_ndex_key_from_str(s)
         } else if s.starts_with(Key::PUBLIC_KEY_NORMAL_HEADER) {
@@ -27,7 +26,7 @@ impl FromStr for Key {
 }
 
 impl Key {
-    fn public_ndex_key_from_str(s: &str) -> Result<Self, RsaError> {
+    fn public_ndex_key_from_str(s: &str) -> RsaResult<Self> {
         let reg = Regex::new(Key::KEY_FILE_STR_RADIX_REGEX).unwrap();
         let pieces: Vec<_> = s.split(Key::PUBLIC_KEY_SPLIT_CHAR).collect();
 
@@ -50,7 +49,7 @@ impl Key {
         })
     }
 
-    fn public_dex_key_from_str(s: &str) -> Result<Self, RsaError> {
+    fn public_dex_key_from_str(s: &str) -> RsaResult<Self> {
         let reg = Regex::new(Key::KEY_FILE_STR_RADIX_REGEX).unwrap();
         let pieces: Vec<_> = s.split(Key::PUBLIC_KEY_SPLIT_CHAR).collect();
 
@@ -73,7 +72,7 @@ impl Key {
         })
     }
 
-    fn private_key_from_str(s: &str) -> Result<Self, RsaError> {
+    fn private_key_from_str(s: &str) -> RsaResult<Self> {
         let reg = Regex::new(Key::KEY_FILE_STR_RADIX_REGEX).unwrap();
         let pieces: Vec<_> = s.split(Key::PRIVATE_KEY_SPLIT_CHAR).collect();
 

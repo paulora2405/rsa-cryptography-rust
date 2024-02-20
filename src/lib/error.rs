@@ -1,9 +1,12 @@
+//! This module contains the custom error type for this library.
+
 use num_bigint::ParseBigIntError;
 use thiserror::Error;
 
-/// Type alias for [`RSAError`] type.
-pub type RSAResult<T> = std::result::Result<T, RsaError>;
+/// Type alias for [`RsaError`] type.
+pub type RsaResult<T> = std::result::Result<T, RsaError>;
 
+/// Custom library error.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum RsaError {
     #[error("could not encode/decoding correctly")]

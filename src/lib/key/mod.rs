@@ -1,16 +1,29 @@
+//! Module containing all code for [`KeyPair`]/[`Key`] generation,
+//! formatting as string, parsing from string,
+//! writting and reading from files and validating.
+
 use crate::math::mod_pow;
 use num_bigint::BigUint;
 
-pub mod generation;
-pub mod reading;
-pub mod writing;
+mod file;
+mod generation;
+mod reading;
+mod writing;
 
+/// Enum to dictate if Key is a Public or Private key.
 #[derive(Debug, PartialEq, Eq)]
 pub enum KeyVariant {
+    /// Has a modules, and can also have a non default exponent.
     PublicKey,
+    /// Always has both an modulus and exponent.
     PrivateKey,
 }
 
+/// Represents the internal components of a Public or Private key.
+///
+/// In the case of a Public key with a default exponent, it is still present in the struct,
+/// but can be recognized via the [`IsDefaultExponent`] trait, which is
+/// implemented for [`BigUint`].
 #[derive(Debug, PartialEq, Eq)]
 pub struct Key {
     /// `D` or `E` part of the key.
@@ -20,6 +33,7 @@ pub struct Key {
     pub(crate) variant: KeyVariant,
 }
 
+/// Contains both the Public and Private keys.
 #[derive(Debug, PartialEq, Eq)]
 pub struct KeyPair {
     pub public_key: Key,
@@ -53,7 +67,9 @@ impl KeyPair {
     }
 }
 
-trait IsDefaultExponent {
+/// Trait to determine if something is equal to the default exponent.
+pub trait IsDefaultExponent {
+    /// Returns if something is equal to the default exponent.
     fn is_default_exponent(&self) -> bool;
 }
 

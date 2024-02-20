@@ -20,6 +20,8 @@ impl Key {
 }
 
 impl fmt::Display for Key {
+    /// Formats the given [`Key`] as a string,
+    /// which can represent the file content of it.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.variant {
             KeyVariant::PublicKey => {
