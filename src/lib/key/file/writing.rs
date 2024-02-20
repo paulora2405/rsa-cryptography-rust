@@ -40,9 +40,9 @@ impl KeyPair {
 
 impl Key {
     pub(super) const APP_CONFIG_DIR: &'static str = crate_name!();
-    pub(super) const DEFAULT_PUBLIC_KEY_EXTENSION: &'static str = "pub";
-    pub(super) const DEFAULT_PUBLIC_KEY_NAME: &'static str = "rrsa_key.pub";
-    pub(super) const DEFAULT_PRIVATE_KEY_NAME: &'static str = "rrsa_key";
+    pub const DEFAULT_PUBLIC_KEY_EXTENSION: &'static str = "pub";
+    pub const DEFAULT_PUBLIC_KEY_NAME: &'static str = "rrsa_key.pub";
+    pub const DEFAULT_PRIVATE_KEY_NAME: &'static str = "rrsa_key";
 
     /// Writes this [`Key`] to a filepath of an existing/to-be-created file,
     /// or the path to a existing directory.
@@ -63,8 +63,7 @@ impl Key {
             path.to_path_buf()
         };
 
-        let mut file = File::create(&filepath)?;
-        file.write_all(self.to_string().as_bytes())?;
+        std::fs::write(&filepath, self.to_string())?;
         Ok(filepath)
     }
 
@@ -89,13 +88,10 @@ impl Key {
         if let Some(project_dirs) = ProjectDirs::from("com", "github", Key::APP_CONFIG_DIR) {
             let default_dir = project_dirs.config_dir();
             if create_dir_all(default_dir).is_ok() {
-                default_dir.to_path_buf()
-            } else {
-                PathBuf::new()
+                return default_dir.to_path_buf();
             }
-        } else {
-            PathBuf::new()
         }
+        PathBuf::new()
     }
 }
 
