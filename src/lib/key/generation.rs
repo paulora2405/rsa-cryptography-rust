@@ -139,26 +139,26 @@ mod tests {
     fn test_key_validation() {
         let key_pair = KeyPair {
             public_key: Key {
-                exponent: BigUint::from(65_537u32), // default value isn't present in key file
-                modulus: BigUint::from(2_523_461_377_u64), // 0x9668f701
+                exponent: BigUint::from(0x1_0001u32), // default exponent
+                modulus: BigUint::from(0x9668_F701u64),
                 variant: KeyVariant::PublicKey,
             },
             private_key: Key {
-                exponent: BigUint::from(343_637_873_u32), // 0x147b7f71
-                modulus: BigUint::from(2_523_461_377u64), // 0x9668f701
+                exponent: BigUint::from(0x147B_7F71u32),
+                modulus: BigUint::from(0x9668_F701u64),
                 variant: KeyVariant::PrivateKey,
             },
         };
         assert!(key_pair.is_valid());
         let key_pair = KeyPair {
             public_key: Key {
-                exponent: BigUint::from(23447u64),       // 0x5b97
-                modulus: BigUint::from(298_224_757_u64), // 0x11c68c75
+                exponent: BigUint::from(0x5B97u64),
+                modulus: BigUint::from(0x11C6_8C75u64),
                 variant: KeyVariant::PublicKey,
             },
             private_key: Key {
-                exponent: BigUint::from(58_335_719_u64), // 0x37a21e7
-                modulus: BigUint::from(298_224_757_u64), // 0x11c68c75
+                exponent: BigUint::from(0x37A_21E7u64),
+                modulus: BigUint::from(0x11C6_8C75u64),
                 variant: KeyVariant::PrivateKey,
             },
         };
