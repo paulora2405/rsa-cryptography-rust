@@ -3,11 +3,12 @@ name = "rrsa"
 version = "0.2.0"
 edition = "2021"
 authors = ["Paulo Roberto Albuquerque"]
-description = "RSA keys generation, encryption and decryption implemented in rust, for learning purposes only.\nSource code can be viewed in:\nhttps://github.com/paulora2405/rsa-cryptography-rust"
+homepage = "https://github.com/paulora2405/rsa-cryptography-rust"
+description = "RSA keys generation, encryption and decryption implemented in rust, for learning purposes only."
 
 [lib]
-name = "rrsa_common"
-path = "src/lib/rrsa_common.rs"
+name = "rrsa_lib"
+path = "src/lib/lib.rs"
 bench = false
 
 [[bin]]
@@ -15,22 +16,26 @@ name = "rrsa-cli"
 path = "src/bin/cli.rs"
 bench = false
 
+[[example]]
+name = "create_key"
+
 [dependencies]
 base64 = "0.21.0"
 clap = { version = "4.0.17", features = ["cargo", "derive"] }
 clap_complete = "4.1.4"
-dbg_hex = "0.1.1"
+dbg_hex = "0.2.0"
 directories = "5.0.0"
 indicatif = "0.17.3"
 lipsum = "0.9.0"
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
+pretty_assertions = "1.4.0"
 rand = "0.8.5"
 regex = "1.5.6"
-rfd = "0.11.2"
+thiserror = "1.0.57"
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
 csv = "1.2.1"
 serde = "1.0.158"
 

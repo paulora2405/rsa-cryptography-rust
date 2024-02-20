@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+#![allow(unused)]
 
 use clap::{Parser, Subcommand};
-use rrsa_common::key::{Key, KeyPair, KeyVariant};
+use rrsa_lib::key::{Key, KeyPair, KeyVariant};
+use std::path::PathBuf;
 
 fn main() -> Result<(), String> {
     match RsaCli::parse().sub_command {
@@ -13,24 +14,26 @@ fn main() -> Result<(), String> {
             print_progress,
         } => {
             let key_pair =
-                KeyPair::generate_keys(maybe_key_size, !use_ndex, print_results, print_progress);
-            key_pair.write_keypair_files(out_path)?;
+                KeyPair::generate(maybe_key_size, !use_ndex, print_results, print_progress);
+            println!("Public Key content is:\n{}", key_pair.public_key);
+            println!("Private Key content is:\n{}", key_pair.private_key);
+            // key_pair.write_keypair_files(out_path)?;
         }
         RsaCommands::Encrypt {
             file_path,
             out_path: maybe_out_path,
             key_path: maybe_key_path,
         } => {
-            let key = Key::read_key_file(maybe_key_path, KeyVariant::PublicKey)?;
-            key.encrypt_file(file_path, maybe_out_path);
+            // let key = Key::read_key_file(maybe_key_path, KeyVariant::PublicKey)?;
+            // key.encrypt_file(file_path, maybe_out_path);
         }
         RsaCommands::Decrypt {
             file_path,
             out_path: maybe_out_path,
             key_path: maybe_key_path,
         } => {
-            let key = Key::read_key_file(maybe_key_path, KeyVariant::PrivateKey)?;
-            key.decrypt_file(file_path, maybe_out_path);
+            // let key = Key::read_key_file(maybe_key_path, KeyVariant::PrivateKey)?;
+            // key.decrypt_file(file_path, maybe_out_path);
         }
     };
     Ok(())
