@@ -1,23 +1,27 @@
-#![allow(unused)]
-
 use clap::{Parser, Subcommand};
-use rrsa_lib::key::{Key, KeyPair, KeyVariant};
+use rrsa_lib::{error::RsaError, key::KeyPair};
 use std::path::PathBuf;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), RsaError> {
     match RsaCli::parse().sub_command {
         RsaCommands::Keygen {
-            key_size: maybe_key_size,
+            key_size: maybe_key_size_bits,
             out_path,
             use_ndex,
             print_results,
             print_progress,
         } => {
-            let key_pair =
-                KeyPair::generate(maybe_key_size, !use_ndex, print_results, print_progress);
-            println!("Public Key content is:\n{}", key_pair.public_key);
-            println!("Private Key content is:\n{}", key_pair.private_key);
-            // key_pair.write_keypair_files(out_path)?;
+            let key_pair = KeyPair::generate(
+                maybe_key_size_bits,
+                !use_ndex,
+                print_results,
+                print_progress,
+            );
+
+            match out_path {
+                Some(path) => key_pair.write_to_path(&path)?,
+                None => key_pair.write_to_default()?,
+            };
         }
         RsaCommands::Encrypt {
             file_path,

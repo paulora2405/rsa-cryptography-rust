@@ -1,13 +1,10 @@
 use super::{Key, KeyVariant};
 use crate::key::IsDefaultExponent;
-use clap::crate_name;
 use std::fmt;
 
 impl Key {
     pub(super) const BIGUINT_STR_RADIX: u32 = 16;
-    pub(super) const APP_CONFIG_DIR: &'static str = crate_name!();
-    pub(super) const PUBLIC_KEY_FILE_EXTENSION: &'static str = "pub";
-    pub(super) const DEFAULT_KEY_NAME: &'static str = "rrsa_key";
+    pub(super) const KEY_FILE_STR_RADIX_REGEX: &'static str = r"^[0-9a-f]+$";
     /// Header for a Public Key with the default exponent.
     pub(super) const PUBLIC_KEY_NORMAL_HEADER: &'static str = "rrsa";
     /// Header for a Public Key with a non default exponent.
@@ -15,7 +12,6 @@ impl Key {
     pub(super) const PUBLIC_KEY_SPLIT_CHAR: char = ' ';
     pub(super) const PRIVATE_KEY_HEADER: &'static str = "-----BEGIN RSA-RUST PRIVATE KEY-----";
     pub(super) const PRIVATE_KEY_FOOTER: &'static str = "-----END RSA-RUST PRIVATE KEY-----";
-    pub(super) const KEY_FILE_STR_RADIX_REGEX: &'static str = r"^[0-9a-f]+$";
     pub(super) const PRIVATE_KEY_SPLIT_CHAR: char = '\n';
 }
 

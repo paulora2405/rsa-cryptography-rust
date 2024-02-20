@@ -3,7 +3,7 @@ name = "rrsa"
 version = "0.2.0"
 edition = "2021"
 authors = ["Paulo Roberto Albuquerque"]
-readme="README.md"
+readme = "README.md"
 homepage = "https://github.com/paulora2405/rsa-cryptography-rust"
 description = "RSA keys generation, encryption and decryption implemented in rust, for learning purposes only."
 
@@ -30,12 +30,12 @@ indicatif = "0.17.3"
 lipsum = "0.9.0"
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.15"
-pretty_assertions = "1.4.0"
 rand = "0.8.5"
 regex = "1.5.6"
 thiserror = "1.0.57"
 
 [dev-dependencies]
+pretty_assertions = "1.4.0"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 csv = "1.2.1"
 serde = "1.0.158"
