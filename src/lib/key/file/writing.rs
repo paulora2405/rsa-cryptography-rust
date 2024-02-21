@@ -1,10 +1,7 @@
 use crate::error::RsaResult;
 use crate::key::{Key, KeyPair, KeyVariant};
-use clap::crate_name;
-use directories::ProjectDirs;
 use std::{
-    fs::{create_dir_all, File},
-    io::Write,
+    fs::create_dir_all,
     path::{Path, PathBuf},
 };
 
@@ -39,11 +36,6 @@ impl KeyPair {
 }
 
 impl Key {
-    pub(super) const APP_CONFIG_DIR: &'static str = crate_name!();
-    pub const DEFAULT_PUBLIC_KEY_EXTENSION: &'static str = "pub";
-    pub const DEFAULT_PUBLIC_KEY_NAME: &'static str = "rrsa_key.pub";
-    pub const DEFAULT_PRIVATE_KEY_NAME: &'static str = "rrsa_key";
-
     /// Writes this [`Key`] to a filepath of an existing/to-be-created file,
     /// or the path to a existing directory.
     /// # Returns
@@ -82,30 +74,22 @@ impl Key {
             }),
         )
     }
-
-    /// Returns the default keys directory, or `cwd` if it cannot be retrived.
-    fn default_dir() -> PathBuf {
-        if let Some(project_dirs) = ProjectDirs::from("com", "github", Key::APP_CONFIG_DIR) {
-            let default_dir = project_dirs.config_dir();
-            if create_dir_all(default_dir).is_ok() {
-                return default_dir.to_path_buf();
-            }
-        }
-        PathBuf::new()
-    }
 }
 
 #[cfg(test)]
 pub(super) mod tests {
     use super::*;
-    use crate::key::tests::pair;
+    use crate::key::{
+        file::tests::{KEY_DIR_PATH, PAIR_DIR_PATH, PAIR_KEY_PATH, PRIV_KEY_PATH, PUB_KEY_PATH},
+        tests::pair,
+    };
     use std::path::PathBuf;
 
     #[test]
     pub(crate) fn test_write_key_to_file() {
-        let pub_path = PathBuf::from("./keys/tests/test_key.pub");
-        let priv_path = PathBuf::from("./keys/tests/test_key");
-        let dir_path = PathBuf::from("./keys/tests/key/");
+        let pub_path = PathBuf::from(PUB_KEY_PATH);
+        let priv_path = PathBuf::from(PRIV_KEY_PATH);
+        let dir_path = PathBuf::from(KEY_DIR_PATH);
         create_dir_all(&dir_path).unwrap();
 
         pair().public_key.write_to_path(&pub_path).unwrap();
@@ -123,8 +107,8 @@ pub(super) mod tests {
 
     #[test]
     pub(crate) fn test_write_key_pair_to_file() {
-        let file_path = PathBuf::from("./keys/tests/test_pair");
-        let dir_path = PathBuf::from("./keys/tests/pair");
+        let file_path = PathBuf::from(PAIR_KEY_PATH);
+        let dir_path = PathBuf::from(PAIR_DIR_PATH);
         create_dir_all(&dir_path).unwrap();
 
         pair().write_to_path(&dir_path).unwrap();
@@ -135,6 +119,18 @@ pub(super) mod tests {
         assert!(file_path.is_file());
         assert!(file_path
             .with_extension(Key::DEFAULT_PUBLIC_KEY_EXTENSION)
+            .is_file());
+    }
+
+    #[test]
+    pub(crate) fn test_write_key_pair_to_default() {
+        pair().write_to_default().unwrap();
+        assert!(Key::default_dir().is_dir());
+        assert!(Key::default_dir()
+            .join(Key::DEFAULT_PUBLIC_KEY_NAME)
+            .is_file());
+        assert!(Key::default_dir()
+            .join(Key::DEFAULT_PRIVATE_KEY_NAME)
             .is_file());
     }
 }
