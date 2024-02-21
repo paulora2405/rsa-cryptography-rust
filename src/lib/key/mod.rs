@@ -12,7 +12,7 @@ mod str;
 /// Enum to dictate if Key is a Public or Private key.
 #[derive(Debug, PartialEq, Eq)]
 pub enum KeyVariant {
-    /// Has a modules, and can also have a non default exponent.
+    /// Has a modulus, and can also have a non default exponent.
     PublicKey,
     /// Always has both an modulus and exponent.
     PrivateKey,
