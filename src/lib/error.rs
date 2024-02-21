@@ -19,6 +19,8 @@ pub enum RsaError {
         #[source]
         std::io::Error,
     ),
+    #[error("key file not present in directory")]
+    MissingKeyFromDirError,
     #[error("error while creating big int from string: {0}")]
     BigIntError(
         #[from]

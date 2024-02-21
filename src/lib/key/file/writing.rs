@@ -96,67 +96,42 @@ impl Key {
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use super::*;
-    use crate::key::KeyVariant;
-    use num_bigint::BigUint;
+    use crate::key::tests::pair;
     use std::path::PathBuf;
 
     #[test]
-    fn test_write_key_to_file() {
-        let public_key = Key {
-            exponent: BigUint::from(0x1_0001u32), // default exponent
-            modulus: BigUint::from(0x9668_F701u64),
-            variant: KeyVariant::PublicKey,
-        };
-        let private_key = Key {
-            exponent: BigUint::from(0x147B_7F71u32),
-            modulus: BigUint::from(0x9668_F701u64),
-            variant: KeyVariant::PrivateKey,
-        };
-
+    pub(crate) fn test_write_key_to_file() {
         let pub_path = PathBuf::from("./keys/tests/test_key.pub");
         let priv_path = PathBuf::from("./keys/tests/test_key");
         let dir_path = PathBuf::from("./keys/tests/key/");
         create_dir_all(&dir_path).unwrap();
 
-        public_key.write_to_path(&pub_path).unwrap();
+        pair().public_key.write_to_path(&pub_path).unwrap();
         assert!(pub_path.is_file());
 
-        public_key.write_to_path(&dir_path).unwrap();
+        pair().public_key.write_to_path(&dir_path).unwrap();
         assert!(dir_path.join(Key::DEFAULT_PUBLIC_KEY_NAME).is_file());
 
-        private_key.write_to_path(&dir_path).unwrap();
+        pair().private_key.write_to_path(&dir_path).unwrap();
         assert!(dir_path.join(Key::DEFAULT_PRIVATE_KEY_NAME).is_file());
 
-        private_key.write_to_path(&priv_path).unwrap();
+        pair().private_key.write_to_path(&priv_path).unwrap();
         assert!(priv_path.is_file());
     }
 
     #[test]
-    fn test_write_key_pair_to_file() {
-        let pair = KeyPair {
-            public_key: Key {
-                exponent: BigUint::from(0x1_0001u32), // default exponent
-                modulus: BigUint::from(0x9668_F701u64),
-                variant: KeyVariant::PublicKey,
-            },
-            private_key: Key {
-                exponent: BigUint::from(0x147B_7F71u32),
-                modulus: BigUint::from(0x9668_F701u64),
-                variant: KeyVariant::PrivateKey,
-            },
-        };
-
+    pub(crate) fn test_write_key_pair_to_file() {
         let file_path = PathBuf::from("./keys/tests/test_pair");
         let dir_path = PathBuf::from("./keys/tests/pair");
         create_dir_all(&dir_path).unwrap();
 
-        pair.write_to_path(&dir_path).unwrap();
+        pair().write_to_path(&dir_path).unwrap();
         assert!(dir_path.join(Key::DEFAULT_PUBLIC_KEY_NAME).is_file());
         assert!(dir_path.join(Key::DEFAULT_PRIVATE_KEY_NAME).is_file());
 
-        pair.write_to_path(&file_path).unwrap();
+        pair().write_to_path(&file_path).unwrap();
         assert!(file_path.is_file());
         assert!(file_path
             .with_extension(Key::DEFAULT_PUBLIC_KEY_EXTENSION)

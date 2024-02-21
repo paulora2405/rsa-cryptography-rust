@@ -60,54 +60,31 @@ impl fmt::Display for Key {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::key::tests::pair;
     use num_bigint::BigUint;
     use pretty_assertions::assert_eq;
 
     #[test]
     fn test_public_key_writing() {
-        let mut public_key = Key {
-            exponent: BigUint::from(Key::DEFAULT_EXPONENT),
-            modulus: BigUint::from(0x9668_f701_u64),
-            variant: KeyVariant::PublicKey,
-        };
-        assert_eq!("rrsa 9668f701\n", public_key.to_string());
+        assert_eq!("rrsa 9668f701\n", pair().public_key.to_string());
 
-        public_key = Key {
+        let public_ndex_key = Key {
             exponent: BigUint::from(0x5b97_u64),
             modulus: BigUint::from(0x11c6_8c75_u64),
             variant: KeyVariant::PublicKey,
         };
-        assert_eq!("rrsa-ndex 11c68c75 5b97\n", public_key.to_string());
+        assert_eq!("rrsa-ndex 11c68c75 5b97\n", public_ndex_key.to_string());
     }
 
     #[test]
     fn test_private_key_writing() {
-        let mut private_key = Key {
-            exponent: BigUint::from(0x147B_7F71_u64),
-            modulus: BigUint::from(0x9668_F701_u64),
-            variant: KeyVariant::PrivateKey,
-        };
         assert_eq!(
             r"-----BEGIN RSA-RUST PRIVATE KEY-----
 9668f701
 147b7f71
 -----END RSA-RUST PRIVATE KEY-----
 ",
-            private_key.to_string()
-        );
-
-        private_key = Key {
-            exponent: BigUint::from(0x037A_21E7_u64),
-            modulus: BigUint::from(0x11C6_8C75_u64),
-            variant: KeyVariant::PrivateKey,
-        };
-        assert_eq!(
-            r"-----BEGIN RSA-RUST PRIVATE KEY-----
-11c68c75
-37a21e7
------END RSA-RUST PRIVATE KEY-----
-",
-            private_key.to_string()
+            pair().private_key.to_string()
         );
     }
 }

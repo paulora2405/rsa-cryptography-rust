@@ -78,3 +78,29 @@ impl IsDefaultExponent for BigUint {
         *self == BigUint::from(Key::DEFAULT_EXPONENT)
     }
 }
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::{Key, KeyPair, KeyVariant};
+    use num_bigint::BigUint;
+    use std::sync::OnceLock;
+
+    static PAIR: OnceLock<KeyPair> = OnceLock::new();
+
+    pub(crate) fn pair() -> &'static KeyPair {
+        PAIR.get_or_init(|| {
+            KeyPair {
+                public_key: Key {
+                    exponent: BigUint::from(0x1_0001u32), // default exponent
+                    modulus: BigUint::from(0x9668_F701u64),
+                    variant: KeyVariant::PublicKey,
+                },
+                private_key: Key {
+                    exponent: BigUint::from(0x147B_7F71u32),
+                    modulus: BigUint::from(0x9668_F701u64),
+                    variant: KeyVariant::PrivateKey,
+                },
+            }
+        })
+    }
+}
