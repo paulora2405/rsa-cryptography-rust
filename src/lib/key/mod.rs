@@ -87,7 +87,7 @@ pub(crate) mod tests {
 
     static PAIR: OnceLock<KeyPair> = OnceLock::new();
 
-    pub(crate) fn pair() -> &'static KeyPair {
+    pub(crate) fn test_pair() -> &'static KeyPair {
         PAIR.get_or_init(|| {
             KeyPair {
                 public_key: Key {

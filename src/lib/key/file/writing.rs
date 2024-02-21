@@ -6,9 +6,11 @@ use std::{
 };
 
 impl KeyPair {
-    /// Writes this [`KeyPair`] to a file or dir path,
-    /// if it is a directory, it must have already been created.
+    /// Writes this [`KeyPair`] to a file or dir path.
+    ///
+    /// If it is a directory, it must have already been created.
     /// The Public Key will have the extension added automatically.
+    ///
     /// # Errors
     /// Propagates [`std::io::Error`].
     pub fn write_to_path(&self, path: &Path) -> RsaResult<()> {
@@ -26,6 +28,7 @@ impl KeyPair {
 
     /// Writes this [`KeyPair`] to the default keys directory,
     /// or `cwd` if default keys directory cannot be created or accessed.
+    ///
     /// # Errors
     /// Propagates [`std::io::Error`].
     pub fn write_to_default(&self) -> RsaResult<()> {
@@ -38,8 +41,14 @@ impl KeyPair {
 impl Key {
     /// Writes this [`Key`] to a filepath of an existing/to-be-created file,
     /// or the path to a existing directory.
+    ///
+    /// If it is a directory, the default key names
+    /// [`Key::DEFAULT_PRIVATE_KEY_NAME`] or
+    /// [`Key::DEFAULT_PUBLIC_KEY_NAME`] are used.
+    ///
     /// # Returns
     /// The final filepath written to.
+    ///
     /// # Errors
     /// Propagates [`std::io::Error`].
     pub fn write_to_path(&self, path: &Path) -> RsaResult<PathBuf> {
@@ -61,8 +70,10 @@ impl Key {
 
     /// Writes this [`Key`] to the default keys directory,
     /// or `cwd` if default keys directory cannot be created or accessed.
+    ///
     /// # Returns
     /// The final filepath written to.
+    ///
     /// # Errors
     /// Propagates [`std::io::Error`].
     pub fn write_to_default(&self) -> RsaResult<PathBuf> {
@@ -81,7 +92,7 @@ pub(super) mod tests {
     use super::*;
     use crate::key::{
         file::tests::{KEY_DIR_PATH, PAIR_DIR_PATH, PAIR_KEY_PATH, PRIV_KEY_PATH, PUB_KEY_PATH},
-        tests::pair,
+        tests::test_pair,
     };
     use std::path::PathBuf;
 
@@ -92,16 +103,16 @@ pub(super) mod tests {
         let dir_path = PathBuf::from(KEY_DIR_PATH);
         create_dir_all(&dir_path).unwrap();
 
-        pair().public_key.write_to_path(&pub_path).unwrap();
+        test_pair().public_key.write_to_path(&pub_path).unwrap();
         assert!(pub_path.is_file());
 
-        pair().public_key.write_to_path(&dir_path).unwrap();
+        test_pair().public_key.write_to_path(&dir_path).unwrap();
         assert!(dir_path.join(Key::DEFAULT_PUBLIC_KEY_NAME).is_file());
 
-        pair().private_key.write_to_path(&dir_path).unwrap();
+        test_pair().private_key.write_to_path(&dir_path).unwrap();
         assert!(dir_path.join(Key::DEFAULT_PRIVATE_KEY_NAME).is_file());
 
-        pair().private_key.write_to_path(&priv_path).unwrap();
+        test_pair().private_key.write_to_path(&priv_path).unwrap();
         assert!(priv_path.is_file());
     }
 
@@ -111,11 +122,11 @@ pub(super) mod tests {
         let dir_path = PathBuf::from(PAIR_DIR_PATH);
         create_dir_all(&dir_path).unwrap();
 
-        pair().write_to_path(&dir_path).unwrap();
+        test_pair().write_to_path(&dir_path).unwrap();
         assert!(dir_path.join(Key::DEFAULT_PUBLIC_KEY_NAME).is_file());
         assert!(dir_path.join(Key::DEFAULT_PRIVATE_KEY_NAME).is_file());
 
-        pair().write_to_path(&file_path).unwrap();
+        test_pair().write_to_path(&file_path).unwrap();
         assert!(file_path.is_file());
         assert!(file_path
             .with_extension(Key::DEFAULT_PUBLIC_KEY_EXTENSION)
@@ -124,7 +135,7 @@ pub(super) mod tests {
 
     #[test]
     pub(crate) fn test_write_key_pair_to_default() {
-        pair().write_to_default().unwrap();
+        test_pair().write_to_default().unwrap();
         assert!(Key::default_dir().is_dir());
         assert!(Key::default_dir()
             .join(Key::DEFAULT_PUBLIC_KEY_NAME)

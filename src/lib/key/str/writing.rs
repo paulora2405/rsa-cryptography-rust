@@ -60,13 +60,13 @@ impl fmt::Display for Key {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::key::tests::pair;
+    use crate::key::tests::test_pair;
     use num_bigint::BigUint;
     use pretty_assertions::assert_eq;
 
     #[test]
     fn test_public_key_writing() {
-        assert_eq!("rrsa 9668f701\n", pair().public_key.to_string());
+        assert_eq!("rrsa 9668f701\n", test_pair().public_key.to_string());
 
         let public_ndex_key = Key {
             exponent: BigUint::from(0x5b97_u64),
@@ -84,7 +84,7 @@ mod tests {
 147b7f71
 -----END RSA-RUST PRIVATE KEY-----
 ",
-            pair().private_key.to_string()
+            test_pair().private_key.to_string()
         );
     }
 }
