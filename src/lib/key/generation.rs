@@ -13,12 +13,14 @@ impl Key {
 impl KeyPair {
     /// Generates the values of P, Q, N Phi(N), E and D and
     /// returns a `KeyPair` with a Public and a Private Key.
+    ///
     /// ## How it works
     /// 1. Select two big prime numbers `P` and `Q`
     /// 2. Calculate `N = P * Q`
     /// 3. Calculate `λ(N) = (P-1) * (Q-1)`
     /// 4. Find a `E` such that `gcd(e, λ(N)) = 1` and `1 < E < λ(N)`
     /// 5. Calculate `D` such that `E*D = 1 (mod λ(N))`
+    ///
     /// # Panics
     /// Panics if `key_size` is not in (32, 4096) interval
     #[allow(clippy::many_single_char_names)]
