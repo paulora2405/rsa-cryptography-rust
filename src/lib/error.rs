@@ -27,4 +27,6 @@ pub enum RsaError {
         #[source]
         ParseBigIntError,
     ),
+    #[error("{0}")]
+    UnknownError(String),
 }
