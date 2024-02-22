@@ -43,8 +43,10 @@ impl KeyPair {
     /// Returns `true` if [`KeyPair`] is valid.
     #[must_use]
     fn is_valid(&self) -> bool {
-        if self.public_key.modulus != self.private_key.modulus
-            || self.public_key.exponent > self.public_key.modulus
+        if !(self.public_key.variant == KeyVariant::PublicKey
+            && self.private_key.variant == KeyVariant::PrivateKey
+            && self.public_key.modulus == self.private_key.modulus
+            && self.public_key.exponent <= self.public_key.modulus)
         {
             return false;
         }
@@ -59,10 +61,7 @@ impl KeyPair {
             &self.private_key.exponent,
             &self.private_key.modulus,
         );
-        if plain_msg != decoded_msg {
-            return false;
-        }
-        true
+        plain_msg == decoded_msg
     }
 }
 
