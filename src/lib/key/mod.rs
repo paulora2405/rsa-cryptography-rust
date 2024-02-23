@@ -42,7 +42,7 @@ pub struct KeyPair {
 impl KeyPair {
     /// Returns `true` if [`KeyPair`] is valid.
     #[must_use]
-    fn is_valid(&self) -> bool {
+    pub fn is_valid(&self) -> bool {
         if !(self.public_key.variant == KeyVariant::PublicKey
             && self.private_key.variant == KeyVariant::PrivateKey
             && self.public_key.modulus == self.private_key.modulus
@@ -62,6 +62,18 @@ impl KeyPair {
             &self.private_key.modulus,
         );
         plain_msg == decoded_msg
+    }
+}
+
+impl Key {
+    #[must_use]
+    pub fn is_public(&self) -> bool {
+        self.variant == KeyVariant::PublicKey
+    }
+
+    #[must_use]
+    pub fn is_private(&self) -> bool {
+        self.variant == KeyVariant::PrivateKey
     }
 }
 
