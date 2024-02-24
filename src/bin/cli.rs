@@ -3,7 +3,11 @@ use rrsa_lib::{
     error::{RsaError, RsaResult},
     key::{Key, KeyPair},
 };
-use std::path::PathBuf;
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter},
+    path::PathBuf,
+};
 
 fn main() -> Result<(), String> {
     run_cli().map_err(|e| e.to_string())
@@ -64,14 +68,43 @@ fn run_cli() -> RsaResult<()> {
             out_path,
             key_path,
         } => {
-            dbg!(in_path, out_path, key_path);
+            let pub_key = if let Some(key_path) = key_path {
+                Key::read_from_path(&key_path)?
+            } else {
+                Key::read_from_default()?
+            };
+
+            let input_f = File::open(&in_path)?;
+            let out_path = out_path.unwrap_or(in_path.with_extension(format!(
+                "{}.encoded",
+                in_path.extension().unwrap_or_default().to_string_lossy()
+            )));
+            let output_f = File::create(&out_path)?;
+            let mut input = BufReader::new(input_f);
+            let mut output = BufWriter::new(output_f);
+
+            pub_key.encode_buf(&mut input, &mut output)?;
+            println!("Done encoding file {}", out_path.display());
         }
         RsaCommands::Decrypt {
             in_path,
             out_path,
             key_path,
         } => {
-            dbg!(in_path, out_path, key_path);
+            let priv_key = if let Some(key_path) = key_path {
+                Key::read_from_path(&key_path)?
+            } else {
+                Key::read_from_default()?
+            };
+
+            let input_f = File::open(&in_path)?;
+            let out_path = out_path.unwrap_or(in_path.with_extension("decoded"));
+            let output_f = File::create(&out_path)?;
+            let mut input = BufReader::new(input_f);
+            let mut output = BufWriter::new(output_f);
+
+            priv_key.decode_buf(&mut input, &mut output)?;
+            println!("Done encoding file {}", out_path.display());
         }
     };
     Ok(())
