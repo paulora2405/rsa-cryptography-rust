@@ -1,6 +1,7 @@
 use num_bigint::{BigInt, BigUint, RandBigInt};
 use num_traits::{One, Zero};
 use rand::prelude::ThreadRng;
+
 pub struct PrimeGenerator {
     prime: BigUint,
     odd: BigUint,
