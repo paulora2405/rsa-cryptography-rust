@@ -27,6 +27,8 @@ pub enum RsaError {
         #[source]
         ParseBigIntError,
     ),
+    #[error("the wrong type of Key Variant was providaded")]
+    WrongKeyVariant,
     #[error("{0}")]
     UnknownError(String),
 }
