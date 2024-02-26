@@ -42,4 +42,4 @@ serde = "1.0.158"
 
 [[bench]]
 harness = false
-name = "my_bench"
+name = "buffer_read_bench"
